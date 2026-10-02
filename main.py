@@ -4,10 +4,11 @@ from database import engine, Base, get_db
 import models, schemas, auth
 from fastapi.middleware.cors import CORSMiddleware
 import os
+import google.generativeai as genai
 
 app = FastAPI(
     title="SMMM Mizan Denetim SaaS API",
-    version="2.0.0"
+    version="3.0.0"
 )
 
 # CORS ayarları
@@ -22,37 +23,43 @@ app.add_middleware(
 # Tabloları oluştur
 Base.metadata.create_all(bind=engine)
 
-# --- YAPAY ZEKA AKILLI YORUM KATMANI ---
+# --- GERÇEK GEMINI API ENTEGRASYONU ---
+# Render Environment Variables kısmından GEMINI_API_KEY okunur
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
+
 def generate_ai_executive_summary(accounts, findings, total_debit, total_credit):
     """
-    Yüklenen mizan ve tespit edilen bulgulara dayanarak bir YMM/Denetçi gözüyle 
-    yapay zeka sentezli yönetici özeti ve risk değerlendirmesi üretir.
+    Mizan verilerini ve tespit edilen riskleri gerçek Google Gemini AI modeline göndererek 
+    bir YMM / Bağımsız Denetçi gözüyle profesyonel ve derinlemesine sentez raporu üretir.
     """
-    critical_count = sum(1 for f in findings if f.get("level") == "KRİTİK")
-    total_findings = len(findings)
-    
-    # Finansal rasyo ve anormallik simülasyonu
-    kasa_durumu = "Normal"
-    ortak_durumu = "Normal"
-    
-    for row in accounts:
-        code = str(row.get("code", ""))
-        credit_bal = float(row.get("creditBal", 0))
-        debit_bal = float(row.get("debitBal", 0))
-        if code.startswith("100") and credit_bal > 0:
-            kasa_durumu = f"KRİTİK: Kasa hesabında {credit_bal:,.2f} TL tutarında ters bakiye (fiili kasa noksanlığı riski) tespit edilmiştir."
-        if code.startswith("131") and debit_bal > 0:
-            ort_durumu = f"KRİTİK: Ortaklar cari hesabında {debit_bal:,.2f} TL bakiye var (Adat faizi ve KVK Madde 13 örtülü kazanç riski)."
+    if not GEMINI_API_KEY:
+        return "Gemini API Anahtarı (GEMINI_API_KEY) Render ortamında tanımlı değil. Lütfen Render panelinden anahtarınızı ekleyin."
 
-    summary_text = (
-        f"Yapay Zeka Denetim Sentezi: Şirket mizanı toplam {total_debit:,.2f} TL hacimle taranmıştır. "
-        f"Yapılan incelemede toplam {total_findings} adet riskli bulgu saptanmış olup bunların {critical_count} tanesi kritik sevicededir. "
-        f"Kasa Analizi: {kasa_durumu} | "
-        f"Finansman ve Ortaklar Cari Analizi: {ort_durumu} "
-        f"Sonuç ve Tavsiye: Şirketin yasal defter tasdikleri, KDV beyannameleri ve vergi matrahı uyumu açısından "
-        f"yukarıda belirtilen düzeltme yevmiye fişlerinin derhal muhasebeleştirilmesi ve dönemsellik ilkelerine uyulması önerilir."
-    )
-    return summary_text
+    try:
+        # Gemini modelini seçiyoruz (gemini-1.5-flash veya güncel model)
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        
+        # Yapay zekaya verilecek kurumsal prompt
+        prompt = f"""
+        Sen kıdemli bir Yeminli Mali Müşavir (YMM) ve Bağımsız Denetçisin. 
+        Aşağıda bir şirkete ait mizan özeti ve tespit edilen risk bulguları yer almaktadır. 
+        Bu verileri VUK (Vergi Usul Kanunu), KVK (Kurumlar Vergisi Kanunu) ve muhasebe ilkeleri açısından 
+        profesyonel, akıcı ve yönetici özeti formatında (en fazla 3-4 cümleyle) yorumla:
+
+        - Toplam Borç: {total_debit:,.2f} TL
+        - Toplam Alacak: {total_credit:,.2f} TL
+        - Tespit Edilen Risk Sayısı: {len(findings)}
+        - Bulgular Özeti: {str(findings)}
+
+        Lütfen bir denetçi raporu titizliğiyle riskleri ve yapılması gerekenleri özetle:
+        """
+
+        response = model.generate_content(prompt)
+        return response.text.strip()
+    except Exception as e:
+        return f"Gemini API bağlantı hatası: {str(e)}"
 
 # --- GELİŞMİŞ DENETİM MOTORU VE OTOMATİK YEVMİYE FİŞİ ÖNERİLERİ ---
 def run_python_audit(accounts):
@@ -128,7 +135,7 @@ def run_python_audit(accounts):
             }
         })
 
-    # Yapay Zeka Sentez Raporunu Üret
+    # Gerçek Gemini API ile Sentez Raporunu Üret
     ai_summary = generate_ai_executive_summary(accounts, findings, total_debit, total_credit)
 
     return {
@@ -183,4 +190,4 @@ def run_audit(payload: dict):
 
 @app.get("/")
 def read_root():
-    return {"message": "SMMM Mizan Denetim SaaS Motoru Aktiftir ve Yapay Zeka Yorum Katmanı Yüklüdür!", "status": "active"}
+    return {"message": "SMMM Mizan Denetim SaaS Motoru Aktiftir ve Gerçek Gemini AI Entegrasyonu Yüklüdür!", "status": "active"}

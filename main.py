@@ -5,10 +5,11 @@ import models, schemas, auth
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import google.generativeai as genai
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 app = FastAPI(
     title="SMMM Mizan Denetim SaaS API",
-    version="3.0.0"
+    version="3.5.0"
 )
 
 # CORS ayarları
@@ -24,44 +25,53 @@ app.add_middleware(
 Base.metadata.create_all(bind=engine)
 
 # --- GERÇEK GEMINI API ENTEGRASYONU ---
-# Render Environment Variables kısmından GEMINI_API_KEY okunur
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
 def generate_ai_executive_summary(accounts, findings, total_debit, total_credit):
-    """
-    Mizan verilerini ve tespit edilen riskleri gerçek Google Gemini AI modeline göndererek 
-    bir YMM / Bağımsız Denetçi gözüyle profesyonel ve derinlemesine sentez raporu üretir.
-    """
     if not GEMINI_API_KEY:
         return "Gemini API Anahtarı (GEMINI_API_KEY) Render ortamında tanımlı değil. Lütfen Render panelinden anahtarınızı ekleyin."
 
     try:
-        # Gemini modelini seçiyoruz (gemini-1.5-flash veya güncel model)
         model = genai.GenerativeModel('gemini-1.5-flash')
-        
-        # Yapay zekaya verilecek kurumsal prompt
         prompt = f"""
         Sen kıdemli bir Yeminli Mali Müşavir (YMM) ve Bağımsız Denetçisin. 
         Aşağıda bir şirkete ait mizan özeti ve tespit edilen risk bulguları yer almaktadır. 
-        Bu verileri VUK (Vergi Usul Kanunu), KVK (Kurumlar Vergisi Kanunu) ve muhasebe ilkeleri açısından 
-        profesyonel, akıcı ve yönetici özeti formatında (en fazla 3-4 cümleyle) yorumla:
+        Bu verileri VUK, KVK ve muhasebe ilkeleri açısından profesyonel ve yönetici özeti formatında (en fazla 3-4 cümleyle) yorumla:
 
         - Toplam Borç: {total_debit:,.2f} TL
         - Toplam Alacak: {total_credit:,.2f} TL
         - Tespit Edilen Risk Sayısı: {len(findings)}
         - Bulgular Özeti: {str(findings)}
 
-        Lütfen bir denetçi raporu titizliğiyle riskleri ve yapılması gerekenleri özetle:
+        Lütfen riskleri ve yapılması gerekenleri özetle:
         """
-
         response = model.generate_content(prompt)
         return response.text.strip()
     except Exception as e:
         return f"Gemini API bağlantı hatası: {str(e)}"
 
-# --- GELİŞMİŞ DENETİM MOTORU VE OTOMATİK YEVMİYE FİŞİ ÖNERİLERİ ---
+# --- GÜVENLİK VE ABONELİK KONTROLÜ ---
+security = HTTPBearer()
+
+def get_current_user_with_subscription(credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)):
+    token = credentials.credentials
+    email = auth.verify_access_token(token)
+    if not email:
+        raise HTTPException(status_code=401, detail="Geçersiz veya süresi dolmuş oturum.")
+    
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı.")
+    
+    # Abonelik / Lisans Durumu Kontrolü
+    if user.subscription_status == "expired":
+        raise HTTPException(status_code=403, detail="Aboneliğiniz sona ermiştir. Lütfen paketinizi yenileyin.")
+        
+    return user
+
+# --- DENETİM MOTORU ---
 def run_python_audit(accounts):
     findings = []
     total_debit = 0
@@ -78,7 +88,7 @@ def run_python_audit(accounts):
         total_debit += debit
         total_credit += credit
         
-        # 100 Kasa Alacak Bakiyesi (Ters Bakiye) Kontrolü
+        # 100 Kasa Alacak Bakiyesi Kontrolü
         if code.startswith("100") and credit_bal > 0:
             findings.append({
                 "code": code,
@@ -135,7 +145,6 @@ def run_python_audit(accounts):
             }
         })
 
-    # Gerçek Gemini API ile Sentez Raporunu Üret
     ai_summary = generate_ai_executive_summary(accounts, findings, total_debit, total_credit)
 
     return {
@@ -161,7 +170,9 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
         email=user.email,
         password_hash=hashed_password,
         full_name=user.full_name,
-        firm_name=user.firm_name
+        firm_name=user.firm_name,
+        role="smmm",
+        subscription_status="trial"
     )
     db.add(new_user)
     db.commit()
@@ -180,7 +191,7 @@ def login(credentials: schemas.UserLogin, db: Session = Depends(get_db)):
     return {"access_token": access_token, "token_type": "bearer"}
 
 @app.post("/audit/run")
-def run_audit(payload: dict):
+def run_audit(payload: dict, current_user: models.User = Depends(get_current_user_with_subscription)):
     accounts = payload.get("accounts", [])
     if not accounts:
         raise HTTPException(status_code=400, detail="Denetlenecek mizan hesapları bulunamadı.")
@@ -190,4 +201,4 @@ def run_audit(payload: dict):
 
 @app.get("/")
 def read_root():
-    return {"message": "SMMM Mizan Denetim SaaS Motoru Aktiftir ve Gerçek Gemini AI Entegrasyonu Yüklüdür!", "status": "active"}
+    return {"message": "SMMM Mizan Denetim SaaS Motoru Aktiftir ve Gelişmiş Modeller Yüklüdür!", "status": "active"}

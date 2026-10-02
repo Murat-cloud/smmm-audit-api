@@ -5,9 +5,13 @@ import models, schemas, auth
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI()
 
-# CORS ayarları
+app = FastAPI(
+    title="SMMM Mizan Denetim SaaS API",
+    version="1.0.0"
+)
+
+# CORS ayarlarını bu tek uygulama üzerine ekliyoruz
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Her yerden gelen isteklere izin ver
@@ -15,13 +19,15 @@ app.add_middleware(
     allow_methods=["*"],  # Tüm HTTP metodlarına izin ver (GET, POST vb.)
     allow_headers=["*"],
 )
+
 # Tabloları oluştur
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(
-    title="SMMM Mizan Denetim SaaS API",
-    version="1.0.0"
-)
+# --- BASİT DENETİM MOTORU (Python Sürümü) ---
+def run_python_audit(accounts):
+    findings = []
+    total_debit = 0
+    total_credit = 0
 
 # --- BASİT DENETİM MOTORU (Python Sürümü) ---
 def run_python_audit(accounts):

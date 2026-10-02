@@ -60,8 +60,8 @@
         <!-- Üst Bar -->
         <header class="h-16 bg-white border-b border-slate-200 px-8 flex items-center justify-between sticky top-0 z-10">
             <div class="flex items-center space-x-4">
-                <h1 class="text-xl font-bold text-slate-800">Akıllı Mizan Analizi ve Risk Denetimi</h1>
-                <span class="px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-full border border-indigo-100">VUK / TFRS Motoru</span>
+                <h1 class="text-xl font-bold text-slate-800">Akıllı Mizan Analizi ve Yevmiye Otomasyonu</h1>
+                <span class="px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-full border border-indigo-100">VUK / KVK / Otomatik Fiş Motoru</span>
             </div>
             <div class="flex items-center space-x-3">
                 <span id="authStatus" class="px-3 py-1 bg-amber-50 text-amber-700 text-xs font-medium rounded-full border border-amber-200">Giriş Yapılmadı</span>
@@ -108,8 +108,8 @@
                 <!-- Excel İndirme ve Başlık Barı -->
                 <div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                     <div>
-                        <h3 class="font-bold text-slate-800 text-lg">Denetim Sonuç Raporu</h3>
-                        <p class="text-xs text-slate-500">Mevzuat ve VUK kurallarına göre taranmıştır.</p>
+                        <h3 class="font-bold text-slate-800 text-lg">Denetim Sonuç Raporu ve Yevmiye Önerileri</h3>
+                        <p class="text-xs text-slate-500">Mevzuat kurallarına göre taranmış ve düzeltme fişleri oluşturulmuştur.</p>
                     </div>
                     <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2.5 rounded-xl transition text-sm flex items-center shadow-sm">
                         <i class="fa-solid fa-file-excel mr-2"></i> Raporu Excel Olarak İndir
@@ -121,21 +121,20 @@
                     <!-- Dinamik dolacak -->
                 </div>
 
-                <!-- Detaylı Risk Tablosu -->
+                <!-- Detaylı Risk Tablosu ve Yevmiye Fişleri -->
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                     <div class="p-6 border-b border-slate-200 flex items-center justify-between">
-                        <h3 class="font-bold text-slate-800 text-lg flex items-center"><i class="fa-solid fa-triangle-exclamation text-amber-500 mr-2"></i> Denetim Bulguları ve Yasal Dayanaklar</h3>
-                        <span class="text-xs bg-slate-100 text-slate-600 px-3 py-1 rounded-lg font-medium">VUK / KVK / TTK Matrisi</span>
+                        <h3 class="font-bold text-slate-800 text-lg flex items-center"><i class="fa-solid fa-triangle-exclamation text-amber-500 mr-2"></i> Denetim Bulguları ve Otomatik Düzeltme Fişleri</h3>
+                        <span class="text-xs bg-slate-100 text-slate-600 px-3 py-1 rounded-lg font-medium">VUK / KVK / Yevmiye Matrisi</span>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse">
                             <thead>
                                 <tr class="bg-slate-50 text-slate-600 uppercase text-[11px] font-bold tracking-wider border-b border-slate-200">
                                     <th class="p-4">Kod</th>
-                                    <th class="p-4">Hesap Adı</th>
+                                    <th class="p-4">Hesap Adı & Risk Detayı</th>
                                     <th class="p-4">Risk Seviyesi</th>
-                                    <th class="p-4">Kategori</th>
-                                    <th class="p-4">Açıklama / Dayanak</th>
+                                    <th class="p-4">Kategori / Dayanak</th>
                                     <th class="p-4 text-right">Tutar (TL)</th>
                                 </tr>
                             </thead>
@@ -152,7 +151,7 @@
     <script>
         const API_URL = "https://smmm-audit-api.onrender.com";
         let authToken = localStorage.getItem("smmm_token") || "";
-        let globalAuditResult = null; // Excel indirmek için gelen veriyi hafızada tutuyoruz
+        let globalAuditResult = null;
 
         window.onload = function() {
             if (authToken) {
@@ -269,7 +268,7 @@
                     });
                     const auditResult = await res.json();
                     if (res.ok) {
-                        globalAuditResult = auditResult; // Excel indirmek için hafızaya alıyoruz
+                        globalAuditResult = auditResult;
                         renderResults(auditResult);
                     } else {
                         alert("Denetim hatası: " + (auditResult.detail || "İşlem başarısız"));
@@ -309,7 +308,7 @@
             
             const findings = result.findings || [];
             if (findings.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-500 font-medium">Mizanda herhangi bir riskli bulguya rastlanmadı. Tebrikler! 🎉</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-500 font-medium">Mizanda herhangi bir riskli bulguya rastlanmadı. Tebrikler! 🎉</td></tr>`;
                 return;
             }
 
@@ -317,23 +316,47 @@
                 let badgeColor = "bg-amber-50 text-amber-700 border-amber-200";
                 if (f.level === "KRİTİK") badgeColor = "bg-rose-50 text-rose-700 border-rose-200";
 
+                // Yevmiye Fişi HTML Bloğunu Oluşturma
+                let journalHtml = "";
+                if (f.journal_suggestion && f.journal_suggestion.lines && f.journal_suggestion.lines.length > 0) {
+                    let linesHtml = f.journal_suggestion.lines.map(l => `
+                        <div class="flex justify-between text-xs py-1 border-b border-indigo-100 last:border-0 font-mono">
+                            <span class="font-semibold text-slate-700">${l.account}</span>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${l.type === 'BORÇ' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'}">${l.type}</span>
+                            <span class="font-bold text-slate-800">${Number(l.amount || 0).toLocaleString('tr-TR', {minimumFractionDigits: 2})} TL</span>
+                        </div>
+                    `).join('');
+
+                    journalHtml = `
+                        <div class="mt-3 p-3 bg-indigo-50/70 border border-indigo-100 rounded-xl">
+                            <p class="text-xs font-bold text-indigo-900 mb-1 flex items-center"><i class="fa-solid fa-file-invoice text-indigo-600 mr-1.5"></i> Önerilen Düzeltme Yevmiye Fişi:</p>
+                            <p class="text-[11px] text-slate-600 mb-2">${f.journal_suggestion.description}</p>
+                            <div class="bg-white p-2.5 rounded-lg border border-indigo-100 space-y-1">
+                                ${linesHtml}
+                            </div>
+                        </div>
+                    `;
+                }
+
                 tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                    <tr class="hover:bg-slate-50 transition border-b border-slate-100 align-top">
                         <td class="p-4 font-mono font-semibold text-slate-800">${f.code}</td>
-                        <td class="p-4 text-slate-800">${f.name}</td>
+                        <td class="p-4 text-slate-800">
+                            <div class="font-bold text-slate-900">${f.name}</div>
+                            <div class="text-slate-600 text-xs mt-0.5">${f.title}</div>
+                            ${journalHtml}
+                        </td>
                         <td class="p-4"><span class="px-2.5 py-1 rounded-md text-xs font-bold border ${badgeColor}">${f.level}</span></td>
-                        <td class="p-4 text-slate-600 font-medium">${f.category}</td>
-                        <td class="p-4 text-slate-600">${f.title} <span class="text-xs text-indigo-600 font-semibold block">(${f.law})</span></td>
+                        <td class="p-4 text-slate-600 font-medium text-xs">${f.category} <span class="text-indigo-600 block">(${f.law})</span></td>
                         <td class="p-4 text-right font-bold text-slate-800">${Number(f.amount || 0).toLocaleString('tr-TR', {minimumFractionDigits: 2})} TL</td>
                     </tr>
                 `;
             });
         }
 
-        // Excel Raporu İndirme Fonksiyonu
         function exportToExcel() {
             if (!globalAuditResult || !globalAuditResult.findings) {
-                alert("İndirilecek analiz raporu bulunamadı! Lütfen önce mizanı analiz edin.");
+                alert("İndirilecek analiz raporu bulunamadı!");
                 return;
             }
 
@@ -342,14 +365,15 @@
                 "Hesap Adı": f.name,
                 "Risk Seviyesi": f.level,
                 "Kategori": f.category,
-                "Açıklama / Dayanak": f.title + " (" + f.law + ")",
+                "Açıklama": f.title,
+                "Yasal Dayanak": f.law,
                 "Tutar (TL)": f.amount
             }));
 
             const worksheet = XLSX.utils.json_to_sheet(exportData);
             const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Denetim_Bulgulari");
-            XLSX.writeFile(workbook, "SMMM_Denetim_Raporu.xlsx");
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Denetim_Ve_Yevmiye_Raporu");
+            XLSX.writeFile(workbook, "SMMM_Denetim_Ve_Yevmiye_Raporu.xlsx");
         }
 
         function switchTab(tabId) {

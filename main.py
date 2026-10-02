@@ -31,26 +31,32 @@ if GEMINI_API_KEY:
 
 def generate_ai_executive_summary(accounts, findings, total_debit, total_credit):
     if not GEMINI_API_KEY:
-        return "Gemini API Anahtarı (GEMINI_API_KEY) Render ortamında tanımlı değil. Lütfen Render panelinden anahtarınızı ekleyin."
+        return "⚠️ Gemini API Anahtarı (GEMINI_API_KEY) Render ortamında tanımlı değil. Lütfen Render panelinden Environment Variables kısmına anahtarınızı ekleyin."
 
     try:
+        genai.configure(api_key=GEMINI_API_KEY)
+        # Daha kararlı ve hızlı yanıt için güncel model adı
         model = genai.GenerativeModel('gemini-1.5-flash')
+        
         prompt = f"""
         Sen kıdemli bir Yeminli Mali Müşavir (YMM) ve Bağımsız Denetçisin. 
         Aşağıda bir şirkete ait mizan özeti ve tespit edilen risk bulguları yer almaktadır. 
-        Bu verileri VUK, KVK ve muhasebe ilkeleri açısından profesyonel ve yönetici özeti formatında (en fazla 3-4 cümleyle) yorumla:
+        Bu verileri VUK, KVK ve muhasebe ilkeleri açısından profesyonel ve yönetici özeti formatında (en fazla 3-4 cümleyle) Türkçe olarak yorumla:
 
         - Toplam Borç: {total_debit:,.2f} TL
         - Toplam Alacak: {total_credit:,.2f} TL
         - Tespit Edilen Risk Sayısı: {len(findings)}
-        - Bulgular Özeti: {str(findings)}
+        - Bulgular Özeti: {str(findings[:3])}
 
-        Lütfen riskleri ve yapılması gerekenleri özetle:
+        Lütfen şirketin mali durumunu ve acilen yapılması gerekenleri net bir dille özetle:
         """
         response = model.generate_content(prompt)
-        return response.text.strip()
+        if response and response.text:
+            return response.text.strip()
+        else:
+            return "Yapay zeka boş bir yanıt döndürdü."
     except Exception as e:
-        return f"Gemini API bağlantı hatası: {str(e)}"
+        return f"Yapay Zeka Sentez Hatası: {str(e)}"
 
 # --- GÜVENLİK VE ESNEK KİMLİK DOĞRULAMA ---
 security = HTTPBearer(auto_error=False)

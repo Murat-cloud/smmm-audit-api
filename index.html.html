@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>SMMM Mizan Denetim SaaS - MVP</title>
+    <script src="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="container mx-auto p-6 max-w-5xl">
+        <header class="bg-indigo-700 text-white p-4 rounded-lg shadow-md mb-6 flex justify-between items-center">
+            <h1 class="text-xl font-bold">🚀 SMMM Mizan Denetim SaaS Platformu (MVP)</h1>
+            <span id="authStatus" class="text-sm bg-indigo-800 px-3 py-1 rounded">Giriş Yapılmadı</span>
+        </header>
+
+        <!-- Giriş / Kayıt Sekmesi -->
+        <div id="authSection" class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <h2 class="text-lg font-semibold mb-4 text-gray-700">1. Oturum Aç / Kayıt Ol</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <input type="email" id="email" placeholder="E-posta Adresi" class="w-full p-2 border rounded mb-2">
+                    <input type="password" id="password" placeholder="Şifre" class="w-full p-2 border rounded mb-2">
+                    <button onclick="loginUser()" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 mr-2">Giriş Yap</button>
+                    <button onclick="registerUser()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Kayıt Ol</button>
+                </div>
+                <div class="text-sm text-gray-600 flex items-center">
+                    <p>Sistemi test etmek için önce kayıt olabilir veya giriş yapabilirsiniz. Token otomatik olarak saklanacaktır.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mizan Yükleme Alanı -->
+        <div id="auditSection" class="bg-white p-6 rounded-lg shadow-md mb-6 hidden">
+            <h2 class="text-lg font-semibold mb-4 text-gray-700">2. Mizan Dosyası Yükle ve Denetlet</h2>
+            <input type="file" id="excelFile" accept=".xlsx, .xls, .csv" class="mb-4 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+            <button onclick="uploadAndAudit()" class="bg-blue-600 text-white px-6 py-2 rounded font-semibold hover:bg-blue-700">Mizanı Analiz Et</button>
+        </div>
+
+        <!-- Sonuçlar -->
+        <div id="resultsSection" class="bg-white p-6 rounded-lg shadow-md hidden">
+            <h2 class="text-lg font-semibold mb-4 text-gray-700">3. Denetim ve Risk Raporu</h2>
+            <div id="summaryBox" class="mb-4 p-4 rounded bg-gray-50 border"></div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-200 text-gray-700 text-sm">
+                            <th class="p-2 border">Kod</th>
+                            <th class="p-2 border">Hesap Adı</th>
+                            <th class="p-2 border">Risk Seviyesi</th>
+                            <th class="p-2 border">Kategori</th>
+                            <th class="p-2 border">Açıklama / Dayanak</th>
+                            <th class="p-2 border text-right">Tutar (TL)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="findingsTableBody" class="text-sm"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "https://smmm-audit-api.onrender.com";
+        let authToken = "";
+
+        async function registerUser() {
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            try {
+                const res = await fetch(`${API_URL}/register`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password, full_name: "Test SMMM", firm_name: "Test Mali Müşavirlik" })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    authToken = data.access_token;
+                    alert("Kayıt başarılı ve giriş yapıldı!");
+                    updateUIAuth();
+                } else {
+                    alert("Hata: " + data.detail);
+                }
+            } catch (err) {
+                alert("Bağlantı hatası: Sunucuya ulaşılamıyor.");
+            }
+        }
+
+        async function loginUser() {
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            try {
+                const res = await fetch(`${API_URL}/login`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    authToken = data.access_token;
+                    alert("Giriş başarılı!");
+                    updateUIAuth();
+                } else {
+                    alert("Hata: " + data.detail);
+                }
+            } catch (err) {
+                alert("Bağlantı hatası: Sunucuya ulaşılamıyor.");
+            }
+        }
+
+        function updateUIAuth() {
+            if (authToken) {
+                document.getElementById("authStatus").innerText = "Giriş Yapıldı (Aktif)";
+                document.getElementById("authStatus").className = "text-sm bg-green-600 px-3 py-1 rounded text-white";
+                document.getElementById("auditSection").classList.remove("hidden");
+            }
+        }
+
+        async function uploadAndAudit() {
+            const fileInput = document.getElementById("excelFile");
+            if (!fileInput.files.length) {
+                alert("Lütfen bir mizan dosyası seçin.");
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = async function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+                // Basit mizan parse mantığı (Sütun eşleme)
+                let accounts = [];
+                for (let i = 1; i < rows.length; i++) {
+                    let r = rows[i];
+                    if (r.length >= 4) {
+                        accounts.push({
+                            code: r[0] || "",
+                            name: r[1] || "",
+                            debit: parseFloat(r[2]) || 0,
+                            credit: parseFloat(r[3]) || 0,
+                            debitBal: parseFloat(r[4]) || 0,
+                            creditBal: parseFloat(r[5]) || 0
+                        });
+                    }
+                }
+
+                // FastAPI sunucusuna gönder
+                try {
+                    const res = await fetch(`${API_URL}/audit/run`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ accounts })
+                    });
+                    const auditResult = await res.json();
+                    if (res.ok) {
+                        renderResults(auditResult);
+                    } else {
+                        alert("Denetim hatası oluştu.");
+                    }
+                } catch (err) {
+                    alert("API bağlantı hatası.");
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function renderResults(result) {
+            document.getElementById("resultsSection").classList.remove("hidden");
+            const summaryBox = document.getElementById("summaryBox");
+            summaryBox.innerHTML = `
+                <p><strong>Mizan Denkliği:</strong> ${result.is_balanced ? '✅ Dengede' : '❌ Dengesiz (Fark: ' + result.balance_diff.toLocaleString() + ' TL)'}</p>
+                <p><strong>Toplam Borç:</strong> ${result.total_debit.toLocaleString()} TL | <strong>Toplam Alacak:</strong> ${result.total_credit.toLocaleString()} TL</p>
+                <p><strong>Tespit Edilen Risk Sayısı:</strong> ${result.findings_count}</p>
+            `;
+
+            const tbody = document.getElementById("findingsTableBody");
+            tbody.innerHTML = "";
+            result.findings.forEach(f => {
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-2 border font-mono">${f.code}</td>
+                        <td class="p-2 border">${f.name}</td>
+                        <td class="p-2 border text-red-600 font-bold">${f.level}</td>
+                        <td class="p-2 border">${f.category}</td>
+                        <td class="p-2 border">${f.title} (${f.law})</td>
+                        <td class="p-2 border text-right font-mono">${f.amount ? f.amount.toLocaleString() : '0'} TL</td>
+                    </tr>
+                `;
+            });
+        }
+    </script>
+</body>
+</html>

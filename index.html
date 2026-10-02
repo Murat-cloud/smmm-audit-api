@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- SheetJS for Excel Reading -->
+    <!-- SheetJS for Excel Reading & Writing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
         tailwind.config = {
@@ -105,6 +105,17 @@
 
             <!-- Sonuçlar ve Risk Paneli -->
             <div id="resultsSection" class="space-y-6 hidden">
+                <!-- Excel İndirme ve Başlık Barı -->
+                <div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-lg">Denetim Sonuç Raporu</h3>
+                        <p class="text-xs text-slate-500">Mevzuat ve VUK kurallarına göre taranmıştır.</p>
+                    </div>
+                    <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2.5 rounded-xl transition text-sm flex items-center shadow-sm">
+                        <i class="fa-solid fa-file-excel mr-2"></i> Raporu Excel Olarak İndir
+                    </button>
+                </div>
+
                 <!-- Özet Kartları -->
                 <div id="summaryBox" class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <!-- Dinamik dolacak -->
@@ -137,10 +148,11 @@
         </div>
     </main>
 
-    <!-- JavaScript Mantığı (Senin Endpoint'lerinle Uyumlu) -->
+    <!-- JavaScript Mantığı -->
     <script>
         const API_URL = "https://smmm-audit-api.onrender.com";
         let authToken = localStorage.getItem("smmm_token") || "";
+        let globalAuditResult = null; // Excel indirmek için gelen veriyi hafızada tutuyoruz
 
         window.onload = function() {
             if (authToken) {
@@ -257,6 +269,7 @@
                     });
                     const auditResult = await res.json();
                     if (res.ok) {
+                        globalAuditResult = auditResult; // Excel indirmek için hafızaya alıyoruz
                         renderResults(auditResult);
                     } else {
                         alert("Denetim hatası: " + (auditResult.detail || "İşlem başarısız"));
@@ -295,6 +308,11 @@
             tbody.innerHTML = "";
             
             const findings = result.findings || [];
+            if (findings.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-500 font-medium">Mizanda herhangi bir riskli bulguya rastlanmadı. Tebrikler! 🎉</td></tr>`;
+                return;
+            }
+
             findings.forEach(f => {
                 let badgeColor = "bg-amber-50 text-amber-700 border-amber-200";
                 if (f.level === "KRİTİK") badgeColor = "bg-rose-50 text-rose-700 border-rose-200";
@@ -310,6 +328,28 @@
                     </tr>
                 `;
             });
+        }
+
+        // Excel Raporu İndirme Fonksiyonu
+        function exportToExcel() {
+            if (!globalAuditResult || !globalAuditResult.findings) {
+                alert("İndirilecek analiz raporu bulunamadı! Lütfen önce mizanı analiz edin.");
+                return;
+            }
+
+            let exportData = globalAuditResult.findings.map(f => ({
+                "Hesap Kodu": f.code,
+                "Hesap Adı": f.name,
+                "Risk Seviyesi": f.level,
+                "Kategori": f.category,
+                "Açıklama / Dayanak": f.title + " (" + f.law + ")",
+                "Tutar (TL)": f.amount
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(exportData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Denetim_Bulgulari");
+            XLSX.writeFile(workbook, "SMMM_Denetim_Raporu.xlsx");
         }
 
         function switchTab(tabId) {

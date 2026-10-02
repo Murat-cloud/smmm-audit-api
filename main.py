@@ -157,18 +157,23 @@ def run_python_audit(accounts):
 
 # --- API ENDPOINTLERİ ---
 
-@app.post("/register", response_model=schemas.Token)
-def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    db_user = db.query(models.User).filter(models.User.email == user.email).first()
+@app.post("/register")
+def register(user: dict, db: Session = Depends(get_db)):
+    email = user.get("email")
+    password = user.get("password")
+    full_name = user.get("full_name", "Test SMMM")
+    firm_name = user.get("firm_name", "Test Mali Müşavirlik")
+    
+    db_user = db.query(models.User).filter(models.User.email == email).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Bu e-posta adresi ile zaten kayıt olunmuş.")
     
-    hashed_password = auth.get_password_hash(user.password)
+    hashed_password = auth.get_password_hash(password)
     new_user = models.User(
-        email=user.email,
+        email=email,
         password_hash=hashed_password,
-        full_name=user.full_name,
-        firm_name=user.firm_name,
+        full_name=full_name,
+        firm_name=firm_name,
         role="smmm",
         subscription_status="trial"
     )
@@ -179,10 +184,13 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     access_token = auth.create_access_token(data={"sub": new_user.email})
     return {"access_token": access_token, "token_type": "bearer"}
 
-@app.post("/login", response_model=schemas.Token)
-def login(credentials: schemas.UserLogin, db: Session = Depends(get_db)):
-    db_user = db.query(models.User).filter(models.User.email == credentials.email).first()
-    if not db_user or not auth.verify_password(credentials.password, db_user.password_hash):
+@app.post("/login")
+def login(credentials: dict, db: Session = Depends(get_db)):
+    email = credentials.get("email")
+    password = credentials.get("password")
+    
+    db_user = db.query(models.User).filter(models.User.email == email).first()
+    if not db_user or not auth.verify_password(password, db_user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Geçersiz e-posta veya şifre.")
     
     access_token = auth.create_access_token(data={"sub": db_user.email})

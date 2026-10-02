@@ -76,77 +76,97 @@ def get_current_user_optional(credentials: HTTPAuthorizationCredentials = Depend
     return user
 
 # --- DENETİM MOTORU ---
+# --- SMMM MİZAN DENETİM KURAL MATRİSİ (Dinamik Altyapı) ---
+AUDIT_MATRIX = {
+    "100": {
+        "prefix": "100",
+        "name": "Kasa Hesabı",
+        "check": "credit_balance",
+        "level": "KRİTİK",
+        "category": "Kasa Denetimi",
+        "title": "100 Kasa Hesabı Alacak Bakiyesi Veremez",
+        "law": "VUK Madde 134, 175",
+        "desc": "Kasa hesabının alacak bakiyesi vermesi fiili kasa noksanlığı veya kayıt hatası gösterir.",
+        "journal_lines": [
+            {"account": "195 İş V. Pers. Avanslar / 131 Ort. Alacaklar", "type": "BORÇ"},
+            {"account": "100 Kasa Hesabı", "type": "ALACAK"}
+        ]
+    },
+    "131": {
+        "prefix": "131",
+        "name": "Ortaklardan Alacaklar",
+        "check": "debit_balance_interest",
+        "level": "KRİTİK",
+        "category": "Ortaklar Adat Riski",
+        "title": "Ortaklar Cari Adat Faizi ve %20 KDV Faturası Kontrolü",
+        "law": "KVK Madde 13 (Örtülü Kazanç)",
+        "desc": "Ortaklara kullandırılan fonlar için emsal faiz hesaplanmalı ve KDV'li fatura düzenlenmelidir.",
+        "journal_lines": [
+            {"account": "649 Diğer Olağan Gelir ve Karlar (Adat Faizi)", "type": "ALACAK"},
+            {"account": "391 Hesaplanan KDV", "type": "ALACAK"},
+            {"account": "131 Ortaklardan Alacaklar", "type": "BORÇ"}
+        ]
+    }
+}
+
+# --- DİNAMİK MATRİS TABANLI DENETİM MOTORU ---
 def run_python_audit(accounts):
     findings = []
-    total_debit = 0
-    total_credit = 0
+    total_debit = 0.0
+    total_credit = 0.0
     
     for row in accounts:
         code = str(row.get("code", "")).strip()
         name = str(row.get("name", "")).strip()
-        debit = float(row.get("debit", 0))
-        credit = float(row.get("credit", 0))
-        debit_bal = float(row.get("debitBal", debit - credit if debit > credit else 0))
-        credit_bal = float(row.get("creditBal", credit - debit if credit > debit else 0))
+        debit = parse_turkish_float(row.get("debit", 0))
+        credit = parse_turkish_float(row.get("credit", 0))
+        debit_bal = parse_turkish_float(row.get("debitBal", debit - credit if debit > credit else 0))
+        credit_bal = parse_turkish_float(row.get("creditBal", credit - debit if credit > debit else 0))
         
         total_debit += debit
         total_credit += credit
         
-        # 100 Kasa Alacak Bakiyesi Kontrolü
-        if code.startswith("100") and credit_bal > 0:
-            findings.append({
-                "code": code,
-                "name": name,
-                "level": "KRİTİK",
-                "category": "Kasa Denetimi",
-                "title": "100 Kasa Hesabı Alacak Bakiyesi Veremez",
-                "amount": credit_bal,
-                "law": "VUK Madde 134, 175",
-                "journal_suggestion": {
-                    "description": "Kasa hesabının alacak bakiyesi vermesi fiili kasa noksanlığı veya hatalı kayıtları gösterir. Düzeltme kaydı önerisi:",
-                    "lines": [
-                        {"account": "195 İş V. Pers. Avanslar / 131 Ort. Alacaklar", "type": "BORÇ", "amount": credit_bal},
-                        {"account": "100 Kasa Hesabı", "type": "ALACAK", "amount": credit_bal}
-                    ]
-                }
-            })
-            
-        # 131 Ortaklar Alacak (Adat Riski) Kontrolü
-        elif code.startswith("131") and debit_bal > 0:
-            findings.append({
-                "code": code,
-                "name": name,
-                "level": "KRİTİK",
-                "category": "Ortaklar Adat Riski",
-                "title": "Ortaklar Cari Adat Faizi ve %20 KDV Faturası Kontrolü",
-                "amount": debit_bal,
-                "law": "KVK Madde 13",
-                "journal_suggestion": {
-                    "description": "Şirketin ortaklara kullandırdığı fonlar için adat faizi hesaplanmalı ve KDV hesaplanarak fatura düzenlenmelidir:",
-                    "lines": [
-                        {"account": "649 Diğer Olağan Gelir ve Karlar (Adat Faizi)", "type": "ALACAK", "amount": debit_bal * 0.05},
-                        {"account": "391 Hesaplanan KDV", "type": "ALACAK", "amount": debit_bal * 0.05 * 0.20},
-                        {"account": "131 Ortaklardan Alacaklar", "type": "BORÇ", "amount": debit_bal * 0.05 * 1.20}
-                    ]
-                }
-            })
+        # Matris Üzerinden Kontrol
+        for key, rule in AUDIT_MATRIX.items():
+            if code.startswith(rule["prefix"]):
+                if rule["check"] == "credit_balance" and credit_bal > 0:
+                    findings.append({
+                        "code": code, "name": name,
+                        "level": rule["level"], "category": rule["category"],
+                        "title": rule["title"], "amount": credit_bal, "law": rule["law"],
+                        "journal_suggestion": {
+                            "description": rule["desc"],
+                            "lines": [{"account": l["account"], "type": l["type"], "amount": credit_bal} for l in rule["journal_lines"]]
+                        }
+                    })
+                elif rule["check"] == "debit_balance_interest" and debit_bal > 0:
+                    interest_amt = debit_bal * 0.05
+                    vat_amt = interest_amt * 0.20
+                    total_amt = interest_amt + vat_amt
+                    findings.append({
+                        "code": code, "name": name,
+                        "level": rule["level"], "category": rule["category"],
+                        "title": rule["title"], "amount": debit_bal, "law": rule["law"],
+                        "journal_suggestion": {
+                            "description": rule["desc"],
+                            "lines": [
+                                {"account": rule["journal_lines"][0]["account"], "type": "ALACAK", "amount": interest_amt},
+                                {"account": rule["journal_lines"][1]["account"], "type": "ALACAK", "amount": vat_amt},
+                                {"account": rule["journal_lines"][2]["account"], "type": "BORÇ", "amount": total_amt}
+                            ]
+                        }
+                    })
 
     balance_diff = abs(total_debit - total_credit)
     is_balanced = balance_diff < 0.05
     
     if not is_balanced:
         findings.insert(0, {
-            "code": "GENEL",
-            "name": "Mizan Denkliği",
-            "level": "KRİTİK",
-            "category": "Mizan Denkliği",
+            "code": "GENEL", "name": "Mizan Denkliği",
+            "level": "KRİTİK", "category": "Mizan Denkliği",
             "title": f"Mizan Borç ve Alacak Toplamı Eşit Değil! Fark: {balance_diff:,.2f} TL",
-            "amount": balance_diff,
-            "law": "VUK Madde 215",
-            "journal_suggestion": {
-                "description": "Mizan denkleşmemektedir. Kayıt hatası veya eksik mizan sütunları kontrol edilmelidir.",
-                "lines": []
-            }
+            "amount": balance_diff, "law": "VUK Madde 215",
+            "journal_suggestion": {"description": "Mizan denkleşmemektedir.", "lines": []}
         })
 
     ai_summary = generate_ai_executive_summary(accounts, findings, total_debit, total_credit)

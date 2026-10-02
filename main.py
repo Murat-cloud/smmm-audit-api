@@ -2,7 +2,19 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import engine, Base, get_db
 import models, schemas, auth
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
+app = FastAPI()
+
+# CORS ayarları
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Her yerden gelen isteklere izin ver
+    allow_credentials=True,
+    allow_methods=["*"],  # Tüm HTTP metodlarına izin ver (GET, POST vb.)
+    allow_headers=["*"],
+)
 # Tabloları oluştur
 Base.metadata.create_all(bind=engine)
 

@@ -2,34 +2,26 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import engine, Base, get_db
 import models, schemas, auth
-from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
 
 app = FastAPI(
     title="SMMM Mizan Denetim SaaS API",
     version="1.0.0"
 )
 
-# CORS ayarlarını bu tek uygulama üzerine ekliyoruz
+# CORS ayarları
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Her yerden gelen isteklere izin ver
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  # Tüm HTTP metodlarına izin ver (GET, POST vb.)
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Tabloları oluştur
 Base.metadata.create_all(bind=engine)
 
-# --- BASİT DENETİM MOTORU (Python Sürümü) ---
-def run_python_audit(accounts):
-    findings = []
-    total_debit = 0
-    total_credit = 0
-
-# --- BASİT DENETİM MOTORU (Python Sürümü) ---
+# --- GELİŞMİŞ DENETİM MOTORU VE OTOMATİK YEVMİYE FİŞİ ÖNERİLERİ ---
 def run_python_audit(accounts):
     findings = []
     total_debit = 0
@@ -55,7 +47,14 @@ def run_python_audit(accounts):
                 "category": "Kasa Denetimi",
                 "title": "100 Kasa Hesabı Alacak Bakiyesi Veremez",
                 "amount": credit_bal,
-                "law": "VUK Madde 134, 175"
+                "law": "VUK Madde 134, 175",
+                "journal_suggestion": {
+                    "description": "Kasa hesabının alacak bakiyesi vermesi fiili kasa noksanlığı veya hatalı kayıtları gösterir. Düzeltme kaydı önerisi:",
+                    "lines": [
+                        {"account": "195 İş V. Pers. Avanslar / 131 Ort. Alacaklar", "type": "BORÇ", "amount": credit_bal},
+                        {"account": "100 Kasa Hesabı", "type": "ALACAK", "amount": credit_bal}
+                    ]
+                }
             })
             
         # 131 Ortaklar Alacak (Adat Riski) Kontrolü
@@ -67,7 +66,15 @@ def run_python_audit(accounts):
                 "category": "Ortaklar Adat Riski",
                 "title": "Ortaklar Cari Adat Faizi ve %20 KDV Faturası Kontrolü",
                 "amount": debit_bal,
-                "law": "KVK Madde 13"
+                "law": "KVK Madde 13",
+                "journal_suggestion": {
+                    "description": "Şirketin ortaklara kullandırdığı fonlar için adat faizi hesaplanmalı ve KDV hesaplanarak fatura düzenlenmelidir:",
+                    "lines": [
+                        {"account": "649 Diğer Olağan Gelir ve Karlar (Adat Faizi)", "type": "ALACAK", "amount": debit_bal * 0.05}, # Tahmini faiz matrahı
+                        {"account": "391 Hesaplanan KDV", "type": "ALACAK", "amount": debit_bal * 0.05 * 0.20},
+                        {"account": "131 Ortaklardan Alacaklar", "type": "BORÇ", "amount": debit_bal * 0.05 * 1.20}
+                    ]
+                }
             })
 
     balance_diff = abs(total_debit - total_credit)
@@ -81,7 +88,11 @@ def run_python_audit(accounts):
             "category": "Mizan Denkliği",
             "title": f"Mizan Borç ve Alacak Toplamı Eşit Değil! Fark: {balance_diff:,.2f} TL",
             "amount": balance_diff,
-            "law": "VUK Madde 215"
+            "law": "VUK Madde 215",
+            "journal_suggestion": {
+                "description": "Mizan denkleşmemektedir. Kayıt hatası veya eksik mizan sütunları kontrol edilmelidir.",
+                "lines": []
+            }
         })
 
     return {
@@ -126,9 +137,6 @@ def login(credentials: schemas.UserLogin, db: Session = Depends(get_db)):
 
 @app.post("/audit/run")
 def run_audit(payload: dict):
-    """
-    Gönderilen mizan hesap listesini alır, kural motorundan geçirerek risk raporunu döner.
-    """
     accounts = payload.get("accounts", [])
     if not accounts:
         raise HTTPException(status_code=400, detail="Denetlenecek mizan hesapları bulunamadı.")
@@ -138,4 +146,4 @@ def run_audit(payload: dict):
 
 @app.get("/")
 def read_root():
-    return {"message": "SMMM Mizan Denetim SaaS Motoru Aktiftir!", "status": "active"}
+    return {"message": "SMMM Mizan Denetim SaaS Motoru Aktiftir ve Yevmiye Öneri Modülü Yüklüdür!", "status": "active"}

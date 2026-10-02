@@ -211,6 +211,12 @@ def run_audit(payload: dict, current_user = Depends(get_current_user_optional)):
     result = run_python_audit(accounts)
     return result
 
-@app.get("/")
+from fastapi.responses import HTMLResponse
+import os
+
+@app.get("/", response_class=HTMLResponse)
 def read_root():
-    return {"message": "SMMM Mizan Denetim SaaS Motoru Aktiftir ve CORS Düzeltilmiştir!", "status": "active"}
+    if os.path.exists("index.html"):
+        with open("index.html", "r", encoding="utf-8") as f:
+            return f.read()
+    return "index.html dosyası sunucuda bulunamadı!"

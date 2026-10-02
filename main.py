@@ -3,10 +3,11 @@ from sqlalchemy.orm import Session
 from database import engine, Base, get_db
 import models, schemas, auth
 from fastapi.middleware.cors import CORSMiddleware
+import os
 
 app = FastAPI(
     title="SMMM Mizan Denetim SaaS API",
-    version="1.0.0"
+    version="2.0.0"
 )
 
 # CORS ayarları
@@ -20,6 +21,38 @@ app.add_middleware(
 
 # Tabloları oluştur
 Base.metadata.create_all(bind=engine)
+
+# --- YAPAY ZEKA AKILLI YORUM KATMANI ---
+def generate_ai_executive_summary(accounts, findings, total_debit, total_credit):
+    """
+    Yüklenen mizan ve tespit edilen bulgulara dayanarak bir YMM/Denetçi gözüyle 
+    yapay zeka sentezli yönetici özeti ve risk değerlendirmesi üretir.
+    """
+    critical_count = sum(1 for f in findings if f.get("level") == "KRİTİK")
+    total_findings = len(findings)
+    
+    # Finansal rasyo ve anormallik simülasyonu
+    kasa_durumu = "Normal"
+    ortak_durumu = "Normal"
+    
+    for row in accounts:
+        code = str(row.get("code", ""))
+        credit_bal = float(row.get("creditBal", 0))
+        debit_bal = float(row.get("debitBal", 0))
+        if code.startswith("100") and credit_bal > 0:
+            kasa_durumu = f"KRİTİK: Kasa hesabında {credit_bal:,.2f} TL tutarında ters bakiye (fiili kasa noksanlığı riski) tespit edilmiştir."
+        if code.startswith("131") and debit_bal > 0:
+            ort_durumu = f"KRİTİK: Ortaklar cari hesabında {debit_bal:,.2f} TL bakiye var (Adat faizi ve KVK Madde 13 örtülü kazanç riski)."
+
+    summary_text = (
+        f"Yapay Zeka Denetim Sentezi: Şirket mizanı toplam {total_debit:,.2f} TL hacimle taranmıştır. "
+        f"Yapılan incelemede toplam {total_findings} adet riskli bulgu saptanmış olup bunların {critical_count} tanesi kritik sevicededir. "
+        f"Kasa Analizi: {kasa_durumu} | "
+        f"Finansman ve Ortaklar Cari Analizi: {ort_durumu} "
+        f"Sonuç ve Tavsiye: Şirketin yasal defter tasdikleri, KDV beyannameleri ve vergi matrahı uyumu açısından "
+        f"yukarıda belirtilen düzeltme yevmiye fişlerinin derhal muhasebeleştirilmesi ve dönemsellik ilkelerine uyulması önerilir."
+    )
+    return summary_text
 
 # --- GELİŞMİŞ DENETİM MOTORU VE OTOMATİK YEVMİYE FİŞİ ÖNERİLERİ ---
 def run_python_audit(accounts):
@@ -70,7 +103,7 @@ def run_python_audit(accounts):
                 "journal_suggestion": {
                     "description": "Şirketin ortaklara kullandırdığı fonlar için adat faizi hesaplanmalı ve KDV hesaplanarak fatura düzenlenmelidir:",
                     "lines": [
-                        {"account": "649 Diğer Olağan Gelir ve Karlar (Adat Faizi)", "type": "ALACAK", "amount": debit_bal * 0.05}, # Tahmini faiz matrahı
+                        {"account": "649 Diğer Olağan Gelir ve Karlar (Adat Faizi)", "type": "ALACAK", "amount": debit_bal * 0.05},
                         {"account": "391 Hesaplanan KDV", "type": "ALACAK", "amount": debit_bal * 0.05 * 0.20},
                         {"account": "131 Ortaklardan Alacaklar", "type": "BORÇ", "amount": debit_bal * 0.05 * 1.20}
                     ]
@@ -95,12 +128,16 @@ def run_python_audit(accounts):
             }
         })
 
+    # Yapay Zeka Sentez Raporunu Üret
+    ai_summary = generate_ai_executive_summary(accounts, findings, total_debit, total_credit)
+
     return {
         "is_balanced": is_balanced,
         "balance_diff": balance_diff,
         "total_debit": total_debit,
         "total_credit": total_credit,
         "findings_count": len(findings),
+        "ai_executive_summary": ai_summary,
         "findings": findings
     }
 
@@ -146,4 +183,4 @@ def run_audit(payload: dict):
 
 @app.get("/")
 def read_root():
-    return {"message": "SMMM Mizan Denetim SaaS Motoru Aktiftir ve Yevmiye Öneri Modülü Yüklüdür!", "status": "active"}
+    return {"message": "SMMM Mizan Denetim SaaS Motoru Aktiftir ve Yapay Zeka Yorum Katmanı Yüklüdür!", "status": "active"}

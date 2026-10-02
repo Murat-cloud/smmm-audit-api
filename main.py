@@ -36,7 +36,7 @@ def generate_ai_executive_summary(accounts, findings, total_debit, total_credit)
     try:
         genai.configure(api_key=GEMINI_API_KEY)
         # Daha kararlı ve hızlı yanıt için güncel model adı
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel('gemini-3.8-flash')
         
         prompt = f"""
         Sen kıdemli bir Yeminli Mali Müşavir (YMM) ve Bağımsız Denetçisin. 

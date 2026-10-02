@@ -28,7 +28,9 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
-    def verify_access_token(token: str) -> Optional[str]:
+
+# BURASI EN SOLDAN BAŞLAMALI (HİÇ BOŞLUK BIRAKMAYIN)
+def verify_access_token(token: str) -> Optional[str]:
     """
     Gelen JWT token'ı decode eder, geçerliliğini ve süresini kontrol eder.
     Eğer token geçerliyse payload içindeki 'sub' (yani kullanıcının email) değerini döner.
@@ -39,6 +41,6 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
         if email is None:
             return None
         return email
-    except Exception: # jwt.ExpiredSignatureError veya jwt.JWTError durumunda None döner
+    except Exception:  # jwt.ExpiredSignatureError veya jwt.JWTError durumunda None döner
         return None
 

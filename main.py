@@ -24,19 +24,33 @@ app.add_middleware(
 # Tabloları oluştur
 Base.metadata.create_all(bind=engine)
 
-# --- GERÇEK GEMINI API ENTEGRASYONU ---
+# --- GERÇEK GEMINI API ENTEGRASYONU (Dinamik ve Akıllı Sürüm) ---
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
+
+def get_best_gemini_model():
+    """
+    Google'ın o an desteklediği en güncel modeli otomatik olarak seçer.
+    Hatalı model ismi sorununu kökten çözer.
+    """
+    try:
+        for m in genai.list_models():
+            if 'generateContent' in m.supported_generation_methods:
+                if 'gemini' in m.name.lower():
+                    return m.name
+    except Exception as e:
+        print(f"Model listelenirken hata oluştu: {e}")
+    
+    return "gemini-1.5-flash"
 
 def generate_ai_executive_summary(accounts, findings, total_debit, total_credit):
     if not GEMINI_API_KEY:
         return "⚠️ Gemini API Anahtarı (GEMINI_API_KEY) Render ortamında tanımlı değil. Lütfen Render panelinden Environment Variables kısmına anahtarınızı ekleyin."
 
     try:
-        genai.configure(api_key=GEMINI_API_KEY)
-        # Daha kararlı ve hızlı yanıt için güncel model adı
-        model = genai.GenerativeModel('gemini-3.8-flash')
+        # En güncel modeli dinamik olarak alıyoruz
+        model_name = get_best_gemini_model()
         
         prompt = f"""
         Sen kıdemli bir Yeminli Mali Müşavir (YMM) ve Bağımsız Denetçisin. 
@@ -50,11 +64,24 @@ def generate_ai_executive_summary(accounts, findings, total_debit, total_credit)
 
         Lütfen şirketin mali durumunu ve acilen yapılması gerekenleri net bir dille özetle:
         """
-        response = model.generate_content(prompt)
-        if response and response.text:
-            return response.text.strip()
-        else:
-            return "Yapay zeka boş bir yanıt döndürdü."
+        
+        # Deneme yanılma ile güvenli çağrı
+        models_to_try = [model_name, 'gemini-1.5-flash', 'gemini-1.5-pro']
+        
+        for current_model in models_to_try:
+            try:
+                # Model ismini temizliyoruz (models/ prefix'i bazen sorun olabiliyor)
+                clean_model_name = current_model.replace("models/", "")
+                model = genai.GenerativeModel(clean_model_name)
+                response = model.generate_content(prompt)
+                if response and response.text:
+                    return response.text.strip()
+            except Exception as sub_e:
+                print(f"{current_model} denenirken hata: {sub_e}")
+                continue
+                
+        return "Yapay zeka yanıt oluşturamadı."
+
     except Exception as e:
         return f"Yapay Zeka Sentez Hatası: {str(e)}"
 

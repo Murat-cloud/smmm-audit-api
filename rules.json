@@ -1,0 +1,1950 @@
+{
+  "status": "partial",
+  "reason": "Tekdüzen Hesap Planı'nın MSUGT'deki resmi standardında 8. sınıf SERBEST bırakılmış, 9. sınıf ise NAZIM HESAPLAR olarak ayrılmış ancak standart 3 haneli hesap listesi belirlenmemiştir. Bu nedenle 8 ve 9 için işletme tarafından uydurulmuş hesaplar eklenmemiştir. Ayrıca standartta adı boş bırakılmış hesap kodları hesap olarak tanımlanmamıştır.",
+  "rules": [
+    {
+      "hesap_kodu": "100",
+      "hesap_adi": "KASA",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "101",
+      "hesap_adi": "ALINAN ÇEKLER",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "102",
+      "hesap_adi": "BANKALAR",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "103",
+      "hesap_adi": "VERİLEN ÇEKLER VE ÖDEME EMİRLERİ (-)",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "108",
+      "hesap_adi": "DİĞER HAZIR DEĞERLER",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "110",
+      "hesap_adi": "HİSSE SENETLERİ",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "111",
+      "hesap_adi": "ÖZEL KESİM TAHVİL, SENET VE BONOLARI",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "112",
+      "hesap_adi": "KAMU KESİMİ TAHVİL, SENET VE BONOLARI",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "118",
+      "hesap_adi": "DİĞER MENKUL KIYMETLER",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "119",
+      "hesap_adi": "MENKUL KIYMETLER DEĞER DÜŞÜKLÜĞÜ KARŞILIĞI (-)",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "120",
+      "hesap_adi": "ALICILAR",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "121",
+      "hesap_adi": "ALACAK SENETLERİ",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "122",
+      "hesap_adi": "ALACAK SENETLERİ REESKONTU (-)",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "126",
+      "hesap_adi": "VERİLEN DEPOZİTO VE TEMİNATLAR",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "128",
+      "hesap_adi": "ŞÜPHELİ TİCARİ ALACAKLAR",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "129",
+      "hesap_adi": "ŞÜPHELİ TİCARİ ALACAKLAR KARŞILIĞI (-)",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "131",
+      "hesap_adi": "ORTAKLARDAN ALACAKLAR",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "132",
+      "hesap_adi": "İŞTİRAKLERDEN ALACAKLAR",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "133",
+      "hesap_adi": "BAĞLI ORTAKLIKLARDAN ALACAKLAR",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "135",
+      "hesap_adi": "PERSONELDEN ALACAKLAR",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "136",
+      "hesap_adi": "DİĞER ÇEŞİTLİ ALACAKLAR",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "137",
+      "hesap_adi": "DİĞER ALACAK SENETLERİ REESKONTU (-)",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "138",
+      "hesap_adi": "ŞÜPHELİ DİĞER ALACAKLAR",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "139",
+      "hesap_adi": "ŞÜPHELİ DİĞER ALACAKLAR KARŞILIĞI (-)",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "150",
+      "hesap_adi": "İLK MADDE VE MALZEME",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "151",
+      "hesap_adi": "YARI MAMULLER - ÜRETİM",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "152",
+      "hesap_adi": "MAMÜLLER",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "153",
+      "hesap_adi": "TİCARİ MALLAR",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "157",
+      "hesap_adi": "DİĞER STOKLAR",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "158",
+      "hesap_adi": "STOK DEĞER DÜŞÜKLÜĞÜ KARŞILIĞI (-)",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "159",
+      "hesap_adi": "VERİLEN SİPARİŞ AVANSLARI",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "180",
+      "hesap_adi": "GELECEK AYLARA AİT GİDERLER",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "181",
+      "hesap_adi": "GELİR TAHAKKUKLARI",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "191",
+      "hesap_adi": "İNDİRİLECEK KATMA DEĞER VERGİSİ",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "192",
+      "hesap_adi": "DİĞER KATMA DEĞER VERGİSİ",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "193",
+      "hesap_adi": "PEŞİN ÖDENEN VERGİLER VE FONLAR",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "196",
+      "hesap_adi": "PERSONEL AVANSLARI",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "197",
+      "hesap_adi": "SAYIM VE TESELLÜM NOKSANLARI",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "198",
+      "hesap_adi": "DİĞER ÇEŞİTLİ DÖNEN VARLIKLAR",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "199",
+      "hesap_adi": "DİĞER DÖNEN VARLIKLAR KARŞILIĞI (-)",
+      "sinif": "1 DÖNEN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "220",
+      "hesap_adi": "ALICILAR",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "221",
+      "hesap_adi": "ALACAK SENETLERİ",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "222",
+      "hesap_adi": "ALACAK SENETLERİ REESKONTU (-)",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "226",
+      "hesap_adi": "VERİLEN DEPOZİTO VE TEMİNATLAR",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "229",
+      "hesap_adi": "ŞÜPHELİ ALACAKLAR KARŞILIĞI (-)",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "230",
+      "hesap_adi": "ORTAKLARDAN ALACAKLAR",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "231",
+      "hesap_adi": "İŞTİRAKLERDEN ALACAKLAR",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "232",
+      "hesap_adi": "BAĞLI ORTAKLIKLARDAN ALACAKLAR",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "235",
+      "hesap_adi": "PERSONELDEN ALACAKLAR",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "236",
+      "hesap_adi": "DİĞER ÇEŞİTLİ ALACAKLAR",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "237",
+      "hesap_adi": "DİĞER ALACAK SENETLERİ REESKONTU (-)",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "239",
+      "hesap_adi": "ŞÜPHELİ DİĞER ALACAKLAR KARŞILIĞI (-)",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "240",
+      "hesap_adi": "BAĞLI MENKUL KIYMETLER",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "241",
+      "hesap_adi": "BAĞLI MENKUL KIYMETLER DEĞER DÜŞÜKLÜĞÜ KARŞILIĞI (-)",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "242",
+      "hesap_adi": "İŞTİRAKLER",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "243",
+      "hesap_adi": "İŞTİRAKLERE SERMAYE TAAHHÜTLERİ (-)",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "244",
+      "hesap_adi": "İŞTİRAKLER SERMAYE PAYLARI DEĞER DÜŞÜKLÜĞÜ KARŞILIĞI (-)",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "245",
+      "hesap_adi": "BAĞLI ORTAKLIKLAR",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "246",
+      "hesap_adi": "BAĞLI ORTAKLIKLARA SERMAYE TAAHHÜTLERİ (-)",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "247",
+      "hesap_adi": "BAĞLI ORTAKLIKLAR SERMAYE PAYLARI DEĞER DÜŞÜKLÜĞÜ KARŞILIĞI (-)",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "248",
+      "hesap_adi": "DİĞER MALİ DURAN VARLIKLAR",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "249",
+      "hesap_adi": "DİĞER MALİ DURAN VARLIKLAR KARŞILIĞI (-)",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "250",
+      "hesap_adi": "ARAZİ VE ARSALAR",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "251",
+      "hesap_adi": "YER ALTI VE YER ÜSTÜ DÜZENLERİ",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "252",
+      "hesap_adi": "BİNALAR",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "253",
+      "hesap_adi": "TESİS, MAKİNE VE CİHAZLAR",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "254",
+      "hesap_adi": "TAŞITLAR",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "255",
+      "hesap_adi": "DEMİRBAŞLAR",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "256",
+      "hesap_adi": "DİĞER MADDİ DURAN VARLIKLAR",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "257",
+      "hesap_adi": "BİRİKMİŞ AMORTİSMANLAR (-)",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "258",
+      "hesap_adi": "YAPILMAKTA OLAN YATIRIMLAR",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "259",
+      "hesap_adi": "VERİLEN AVANSLAR",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "260",
+      "hesap_adi": "HAKLAR",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "261",
+      "hesap_adi": "ŞEREFİYE",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "262",
+      "hesap_adi": "KURULUŞ VE ÖRGÜTLENME GİDERLERİ",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "263",
+      "hesap_adi": "ARAŞTIRMA VE GELİŞTİRME GİDERLERİ",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "264",
+      "hesap_adi": "ÖZEL MALİYETLER",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "267",
+      "hesap_adi": "DİĞER MADDİ OLMAYAN DURAN VARLIKLAR",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "268",
+      "hesap_adi": "BİRİKMİŞ AMORTİSMANLAR (-)",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "269",
+      "hesap_adi": "VERİLEN AVANSLAR",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "271",
+      "hesap_adi": "ARAMA GİDERLERİ",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "272",
+      "hesap_adi": "HAZIRLIK VE GELİŞTİRME GİDERLERİ",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "277",
+      "hesap_adi": "DİĞER ÖZEL TÜKENMEYE TABİ VARLIKLAR",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "278",
+      "hesap_adi": "BİRİKMİŞ TÜKENME PAYLARI (-)",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "279",
+      "hesap_adi": "VERİLEN AVANSLAR",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "280",
+      "hesap_adi": "GELECEK YILLARA AİT GİDERLER",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "281",
+      "hesap_adi": "GELİR TAHAKKUKLARI",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "291",
+      "hesap_adi": "GELECEK YILLARDA İNDİRİLECEK KATMA DEĞER VERGİSİ",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "292",
+      "hesap_adi": "DİĞER KATMA DEĞER VERGİSİ",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "293",
+      "hesap_adi": "GELECEK YILLAR İHTİYACI STOKLAR",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "294",
+      "hesap_adi": "ELDEN ÇIKARILACAK STOKLAR VE MADDİ DURAN VARLIKLAR",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "297",
+      "hesap_adi": "DİĞER ÇEŞİTLİ DURAN VARLIKLAR",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "298",
+      "hesap_adi": "STOK DEĞER DÜŞÜKLÜĞÜ KARŞILIĞI (-)",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "299",
+      "hesap_adi": "BİRİKMİŞ AMORTİSMANLAR (-)",
+      "sinif": "2 DURAN VARLIKLAR",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "300",
+      "hesap_adi": "BANKA KREDİLERİ",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "303",
+      "hesap_adi": "UZUN VADELİ KREDİLERİN ANAPARA TAKSİTLERİ VE FAİZLERİ",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "304",
+      "hesap_adi": "TAHVİL ANAPARA BORÇ, TAKSİT VE FAİZLERİ",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "305",
+      "hesap_adi": "ÇIKARILMIŞ BONOLAR VE SENETLER",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "306",
+      "hesap_adi": "ÇIKARILMIŞ DİĞER MENKUL KIYMETLER",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "308",
+      "hesap_adi": "MENKUL KIYMETLER İHRAÇ FARKI (-)",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "309",
+      "hesap_adi": "DİĞER MALİ BORÇLAR",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "320",
+      "hesap_adi": "SATICILAR",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "321",
+      "hesap_adi": "BORÇ SENETLERİ",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "322",
+      "hesap_adi": "BORÇ SENETLERİ REESKONTU (-)",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "326",
+      "hesap_adi": "ALINAN DEPOZİTO VE TEMİNATLAR",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "329",
+      "hesap_adi": "DİĞER TİCARİ BORÇLAR",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "331",
+      "hesap_adi": "ORTAKLARA BORÇLAR",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "332",
+      "hesap_adi": "İŞTİRAKLERE BORÇLAR",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "333",
+      "hesap_adi": "BAĞLI ORTAKLIKLARA BORÇLAR",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "335",
+      "hesap_adi": "PERSONELE BORÇLAR",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "337",
+      "hesap_adi": "DİĞER BORÇ SENETLERİ REESKONTU (-)",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "339",
+      "hesap_adi": "DİĞER ÇEŞİTLİ BORÇLAR",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "340",
+      "hesap_adi": "ALINAN SİPARİŞ AVANSLARI",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "349",
+      "hesap_adi": "ALINAN DİĞER AVANSLAR",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "360",
+      "hesap_adi": "ÖDENECEK VERGİ VE FONLAR",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "361",
+      "hesap_adi": "ÖDENECEK SOSYAL GÜVENLİK KESİNTİLERİ",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "368",
+      "hesap_adi": "VADESİ GEÇMİŞ ERTELENMİŞ VEYA TAKSİTLENDİRİLMİŞ VERGİ VE DİĞER YÜKÜMLÜLÜKLER",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "369",
+      "hesap_adi": "ÖDENECEK DİĞER YÜKÜMLÜLÜKLER",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "370",
+      "hesap_adi": "DÖNEM KÂRI VERGİ VE DİĞER YASAL YÜKÜMLÜLÜK KARŞILIKLARI",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "371",
+      "hesap_adi": "DÖNEM KÂRININ PEŞİN ÖDENEN VERGİ VE DİĞER YÜKÜMLÜLÜKLERİ (-)",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "372",
+      "hesap_adi": "KIDEM TAZMİNATI KARŞILIĞI",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "373",
+      "hesap_adi": "MALİYET GİDERLERİ KARŞILIĞI",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "379",
+      "hesap_adi": "DİĞER BORÇ VE GİDER KARŞILIKLARI",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "380",
+      "hesap_adi": "GELECEK AYLARA AİT GELİRLER",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "381",
+      "hesap_adi": "GİDER TAHAKKUKLARI",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "391",
+      "hesap_adi": "HESAPLANAN KDV",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "392",
+      "hesap_adi": "DİĞER KDV",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "398",
+      "hesap_adi": "SAYIM VE TESELLÜM FAZLALARI",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "399",
+      "hesap_adi": "DİĞER ÇEŞİTLİ YABANCI KAYNAKLAR",
+      "sinif": "3 KISA VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "400",
+      "hesap_adi": "BANKA KREDİLERİ",
+      "sinif": "4 UZUN VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "405",
+      "hesap_adi": "ÇIKARILMIŞ TAHVİLLER",
+      "sinif": "4 UZUN VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "407",
+      "hesap_adi": "ÇIKARILMIŞ DİĞER MENKUL KIYMETLER",
+      "sinif": "4 UZUN VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "408",
+      "hesap_adi": "MENKUL KIYMETLER İHRAÇ FARKI (-)",
+      "sinif": "4 UZUN VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "409",
+      "hesap_adi": "DİĞER MALİ BORÇLAR",
+      "sinif": "4 UZUN VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "420",
+      "hesap_adi": "SATICILAR",
+      "sinif": "4 UZUN VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "421",
+      "hesap_adi": "BORÇ SENETLERİ",
+      "sinif": "4 UZUN VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "422",
+      "hesap_adi": "BORÇ SENETLERİ REESKONTU (-)",
+      "sinif": "4 UZUN VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "426",
+      "hesap_adi": "ALINAN DEPOZİTO VE TEMİNATLAR",
+      "sinif": "4 UZUN VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "429",
+      "hesap_adi": "DİĞER TİCARİ BORÇLAR",
+      "sinif": "4 UZUN VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "431",
+      "hesap_adi": "ORTAKLARA BORÇLAR",
+      "sinif": "4 UZUN VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "432",
+      "hesap_adi": "İŞTİRAKLERE BORÇLAR",
+      "sinif": "4 UZUN VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "433",
+      "hesap_adi": "BAĞLI ORTAKLIKLARA BORÇLAR",
+      "sinif": "4 UZUN VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "437",
+      "hesap_adi": "DİĞER BORÇ SENETLERİ REESKONTU (-)",
+      "sinif": "4 UZUN VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "438",
+      "hesap_adi": "KAMUYA OLAN ERTELENMİŞ VEYA TAKSİTLENDİRİLMİŞ BORÇLAR",
+      "sinif": "4 UZUN VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "439",
+      "hesap_adi": "DİĞER ÇEŞİTLİ BORÇLAR",
+      "sinif": "4 UZUN VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "440",
+      "hesap_adi": "ALINAN SİPARİŞ AVANSLARI",
+      "sinif": "4 UZUN VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "449",
+      "hesap_adi": "ALINAN DİĞER AVANSLAR",
+      "sinif": "4 UZUN VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "472",
+      "hesap_adi": "KIDEM TAZMİNATI KARŞILIĞI",
+      "sinif": "4 UZUN VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "479",
+      "hesap_adi": "DİĞER BORÇ VE GİDER KARŞILIKLARI",
+      "sinif": "4 UZUN VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "480",
+      "hesap_adi": "GELECEK YILLARA AİT GELİRLER",
+      "sinif": "4 UZUN VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "481",
+      "hesap_adi": "GİDER TAHAKKUKLARI",
+      "sinif": "4 UZUN VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "492",
+      "hesap_adi": "GELECEK YILLARA ERTELENEN VEYA TERKİN EDİLEN KATMA DEĞER VERGİSİ",
+      "sinif": "4 UZUN VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "493",
+      "hesap_adi": "TESİSE KATILMA PAYLARI",
+      "sinif": "4 UZUN VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "499",
+      "hesap_adi": "DİĞER ÇEŞİTLİ UZUN VADELİ YABANCI KAYNAKLAR",
+      "sinif": "4 UZUN VADELİ YABANCI KAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "500",
+      "hesap_adi": "SERMAYE",
+      "sinif": "5 ÖZKAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "501",
+      "hesap_adi": "ÖDENMEMİŞ SERMAYE (-)",
+      "sinif": "5 ÖZKAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "520",
+      "hesap_adi": "HİSSE SENETLERİ İHRAÇ PRİMLERİ",
+      "sinif": "5 ÖZKAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "521",
+      "hesap_adi": "HİSSE SENEDİ İPTAL KÂRLARI",
+      "sinif": "5 ÖZKAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "522",
+      "hesap_adi": "M.D.V. YENİDEN DEĞERLEME ARTIŞLARI",
+      "sinif": "5 ÖZKAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "523",
+      "hesap_adi": "İŞTİRAKLER YENİDEN DEĞERLEME ARTIŞLARI",
+      "sinif": "5 ÖZKAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "529",
+      "hesap_adi": "DİĞER SERMAYE YEDEKLERİ",
+      "sinif": "5 ÖZKAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "540",
+      "hesap_adi": "YASAL YEDEKLER",
+      "sinif": "5 ÖZKAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "541",
+      "hesap_adi": "STATÜ YEDEKLERİ",
+      "sinif": "5 ÖZKAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "542",
+      "hesap_adi": "OLAĞANÜSTÜ YEDEKLER",
+      "sinif": "5 ÖZKAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "548",
+      "hesap_adi": "DİĞER KÂR YEDEKLERİ",
+      "sinif": "5 ÖZKAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "549",
+      "hesap_adi": "ÖZEL FONLAR",
+      "sinif": "5 ÖZKAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "570",
+      "hesap_adi": "GEÇMİŞ YILLAR KÂRLARI",
+      "sinif": "5 ÖZKAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "580",
+      "hesap_adi": "GEÇMİŞ YILLAR ZARARLARI (-)",
+      "sinif": "5 ÖZKAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "590",
+      "hesap_adi": "DÖNEM NET KÂRI",
+      "sinif": "5 ÖZKAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "591",
+      "hesap_adi": "DÖNEM NET ZARARI (-)",
+      "sinif": "5 ÖZKAYNAKLAR",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "600",
+      "hesap_adi": "YURTİÇİ SATIŞLAR",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "601",
+      "hesap_adi": "YURTDIŞI SATIŞLAR",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "602",
+      "hesap_adi": "DİĞER GELİRLER",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "610",
+      "hesap_adi": "SATIŞTAN İADELER (-)",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "611",
+      "hesap_adi": "SATIŞ İSKONTOLARI (-)",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "612",
+      "hesap_adi": "DİĞER İNDİRİMLER (-)",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "620",
+      "hesap_adi": "SATILAN MAMÜLLER MALİYETİ (-)",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "621",
+      "hesap_adi": "SATILAN TİCARİ MALLAR MALİYETİ (-)",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "622",
+      "hesap_adi": "SATILAN HİZMET MALİYETİ (-)",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "623",
+      "hesap_adi": "DİĞER SATIŞLARIN MALİYETİ (-)",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "630",
+      "hesap_adi": "ARAŞTIRMA VE GELİŞTİRME GİDERLERİ (-)",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "631",
+      "hesap_adi": "PAZARLAMA SATIŞ VE DAĞITIM GİDERLERİ",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "632",
+      "hesap_adi": "GENEL YÖNETİM GİDERLERİ (-)",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "640",
+      "hesap_adi": "İŞTİRAKLERDEN TEMETTÜ GELİRLERİ",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "641",
+      "hesap_adi": "BAĞLI ORTAKLIKLARDAN TEMETTÜ GELİRLERİ",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "642",
+      "hesap_adi": "FAİZ GELİRLERİ",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "643",
+      "hesap_adi": "KOMİSYON GELİRLERİ",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "644",
+      "hesap_adi": "KONUSU KALMAYAN KARŞILIKLAR",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "649",
+      "hesap_adi": "FAALİYETLE İLGİLİ DİĞER GELİR VE KÂRLAR",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "652",
+      "hesap_adi": "REESKONT FAİZ GİDERLERİ (-)",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "653",
+      "hesap_adi": "KOMİSYON GİDERLERİ (-)",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "654",
+      "hesap_adi": "KARŞILIK GİDERLERİ (-)",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "659",
+      "hesap_adi": "DİĞER GİDER VE ZARARLAR (-)",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "660",
+      "hesap_adi": "KISA VADELİ BORÇLANMA GİDERLERİ (-)",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "661",
+      "hesap_adi": "UZUN VADELİ BORÇLANMA GİDERLERİ (-)",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "671",
+      "hesap_adi": "ÖNCEKİ DÖNEM GELİR VE KÂRLARI",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "679",
+      "hesap_adi": "DİĞER OLAĞANDIŞI GELİR VE KÂRLAR",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "680",
+      "hesap_adi": "ÇALIŞMAYAN KISIM GİDER VE ZARARLARI (-)",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "681",
+      "hesap_adi": "ÖNCEKİ DÖNEM GİDER VE ZARARLARI (-)",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "689",
+      "hesap_adi": "DİĞER OLAĞANDIŞI GİDER VE ZARARLAR (-)",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "690",
+      "hesap_adi": "DÖNEM KÂRI VEYA ZARARI",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "691",
+      "hesap_adi": "DÖNEM KÂRI VERGİ VE DİĞER YASAL YÜKÜMLÜLÜK KARŞILIKLARI (-)",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "692",
+      "hesap_adi": "DÖNEM NET KÂRI VEYA ZARARI",
+      "sinif": "6 GELİR TABLOSU HESAPLARI",
+      "calisma_karakteri": "Pasif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "700",
+      "hesap_adi": "MALİYET MUHASEBESİ BAĞLANTI HESABI",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "701",
+      "hesap_adi": "MALİYET MUHASEBESİ YANSITMA HESABI",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "710",
+      "hesap_adi": "DİREKT İLKMADDE VE MALZEME GİDERLERİ",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "711",
+      "hesap_adi": "DİREKT İLKMADDE VE MALZEME YANSITMA HESABI",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "712",
+      "hesap_adi": "DİREKT İLKMADDE VE MALZEME FİYAT FARKI",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "713",
+      "hesap_adi": "DİREKT İLKMADDE VE MALZEME MİKTAR FARKI",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "720",
+      "hesap_adi": "DİREKT İŞÇİLİK GİDERLERİ",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "721",
+      "hesap_adi": "DİREKT İŞÇİLİK GİDERLERİ YANSITMA HESABI",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "722",
+      "hesap_adi": "DİREKT İŞÇİLİK ÜCRET FARKLARI",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "723",
+      "hesap_adi": "DİREKT İŞÇİLİK SÜRE (ZAMAN) FARKLARI",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "730",
+      "hesap_adi": "GENEL ÜRETİM GİDERLERİ",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "731",
+      "hesap_adi": "GENEL ÜRETİM GİDERLERİ YANSITMA HESABI",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "732",
+      "hesap_adi": "GENEL ÜRETİM GİDERLERİ BÜTÇE FARKLARI",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "733",
+      "hesap_adi": "GENEL ÜRETİM GİDERLERİ VERİMLİLİK FARKLARI",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "734",
+      "hesap_adi": "GENEL ÜRETİM GİDERLERİ KAPASİTE FARKLARI",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "740",
+      "hesap_adi": "HİZMET ÜRETİM MALİYETİ",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "741",
+      "hesap_adi": "HİZMET ÜRETİM MALİYETİ YANSITMA HESABI",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "742",
+      "hesap_adi": "HİZMET ÜRETİM MALİYETİ FARK HESAPLARI",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "750",
+      "hesap_adi": "ARAŞTIRMA VE GELİŞTİRME GİDERLERİ",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "751",
+      "hesap_adi": "ARAŞTIRMA VE GELİŞTİRME GİDERLERİ YANSITMA HESABI",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "752",
+      "hesap_adi": "ARAŞTIRMA VE GELİŞTİRME GİDER FARKLARI",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "760",
+      "hesap_adi": "PAZARLAMA SATIŞ VE DAĞITIM GİDERLERİ",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "761",
+      "hesap_adi": "PAZARLAMA SATIŞ VE DAĞITIM GİDERLERİ YANSITMA HESABI",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "762",
+      "hesap_adi": "PAZARLAMA SATIŞ VE DAĞITIM GİDERLERİ FARK HESABI",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "770",
+      "hesap_adi": "GENEL YÖNETİM GİDERLERİ",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "771",
+      "hesap_adi": "GENEL YÖNETİM GİDERLERİ YANSITMA HESABI",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "772",
+      "hesap_adi": "GENEL YÖNETİM GİDER FARKLARI HESABI",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "780",
+      "hesap_adi": "FİNANSMAN GİDERLERİ",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "781",
+      "hesap_adi": "FİNANSMAN GİDERLERİ YANSITMA HESABI",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "782",
+      "hesap_adi": "FİNANSMAN GİDERLERİ FARK HESABI",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "790",
+      "hesap_adi": "İLKMADDE VE MALZEME GİDERLERİ",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "791",
+      "hesap_adi": "İŞÇİ ÜCRET VE GİDERLERİ",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "792",
+      "hesap_adi": "MEMUR ÜCRET VE GİDERLERİ",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "793",
+      "hesap_adi": "DIŞARIDAN SAĞLANAN FAYDA VE HİZMETLER",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "794",
+      "hesap_adi": "ÇEŞİTLİ GİDERLER",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "795",
+      "hesap_adi": "VERGİ, RESİM VE HARÇLAR",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "796",
+      "hesap_adi": "AMORTİSMANLAR VE TÜKENME PAYLARI",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "797",
+      "hesap_adi": "FİNANSMAN GİDERLERİ",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    },
+    {
+      "hesap_kodu": "798",
+      "hesap_adi": "GİDER ÇEŞİTLERİ YANSITMA HESABI",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Alacak",
+      "azalis_yonu": "Borç"
+    },
+    {
+      "hesap_kodu": "799",
+      "hesap_adi": "ÜRETİM MALİYET HESABI",
+      "sinif": "7 MALİYET HESAPLARI",
+      "calisma_karakteri": "Aktif",
+      "artis_yonu": "Borç",
+      "azalis_yonu": "Alacak"
+    }
+  ]
+}

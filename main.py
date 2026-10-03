@@ -143,6 +143,13 @@ def run_python_audit(accounts):
                     interest_amt = debit_bal * 0.05
                     vat_amt = interest_amt * 0.20
                     total_amt = interest_amt + vat_amt
+                    
+                    # Güvenli muavin hesap eşleştirmesi (IndexError çökmelerini önler)
+                    j_lines = rule.get("journal_lines", [])
+                    acc_interest = j_lines[0]["account"] if len(j_lines) > 0 else "642.01"
+                    acc_vat = j_lines[1]["account"] if len(j_lines) > 1 else "391.01"
+                    acc_total = j_lines[2]["account"] if len(j_lines) > 2 else "131.01"
+                    
                     findings.append({
                         "code": code, "name": name,
                         "level": rule["level"], "category": rule["category"],
@@ -150,9 +157,9 @@ def run_python_audit(accounts):
                         "journal_suggestion": {
                             "description": rule["desc"],
                             "lines": [
-                                {"account": rule["journal_lines"][0]["account"], "type": "ALACAK", "amount": interest_amt},
-                                {"account": rule["journal_lines"][1]["account"], "type": "ALACAK", "amount": vat_amt},
-                                {"account": rule["journal_lines"][2]["account"], "type": "BORÇ", "amount": total_amt}
+                                {"account": acc_interest, "type": "ALACAK", "amount": interest_amt},
+                                {"account": acc_vat, "type": "ALACAK", "amount": vat_amt},
+                                {"account": acc_total, "type": "BORÇ", "amount": total_amt}
                             ]
                         }
                     })
@@ -169,7 +176,14 @@ def run_python_audit(accounts):
             "journal_suggestion": {"description": "Mizan denkleşmemektedir.", "lines": []}
         })
 
-    ai_summary = generate_ai_executive_summary(accounts, findings, total_debit, total_credit)
+    # YAPAY ZEKA KORUMA KALKANI: Google API kotası dolduğunda tüm sistemin çökmesini engeller
+    try:
+        ai_summary = generate_ai_executive_summary(accounts, findings, total_debit, total_credit)
+    except Exception as e:
+        if "429" in str(e) or "quota" in str(e).lower():
+            ai_summary = "Yapay Zeka Sentez Hatası: Google Gemini API ücretsiz dakika limitiniz (Max 5 istek) doldu. Sisteminizin çökmemesi için bu geçici özet üretildi. Lütfen 30 saniye sonra tekrar deneyiniz."
+        else:
+            ai_summary = f"Yapay zeka özeti oluşturulurken bir teknik hata oluştu: {str(e)}"
 
     return {
         "is_balanced": is_balanced,

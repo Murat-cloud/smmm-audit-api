@@ -6,13 +6,13 @@ from sqlalchemy.orm import Session
 import os
 import google.generativeai as genai
 
-# Proje içi modülleriniz (database.py, models.py, schemas.py, auth.py)
+# Proje içi modülleriniz
 from database import engine, Base, get_db
 import models, schemas, auth
 
 app = FastAPI(
     title="SMMM Mizan Denetim SaaS API",
-    version="4.0.0"
+    version="4.1.0"
 )
 
 # --- EVRENSEL CORS AYARLARI ---
@@ -49,18 +49,46 @@ def parse_turkish_float(val) -> float:
     except ValueError:
         return 0.0
 
-# --- GEMINI YAPAY ZEKA MOTORU (Gemini 3.8 Öncelikli + Kademeli Fallback) ---
+# --- GEMINI YAPAY ZEKA MOTORU (Dinamik Model Keşif Mimarisi) ---
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
-# Denenecek modellerin hiyerarşisi (Gemini 3.8 Flash ilk sırada)
-GEMINI_MODELS_FALLBACK_CHAIN = [
-    "gemini-3.8-flash",
-    "gemini-2.5-flash",
-    "gemini-1.5-flash",
-    "gemini-1.5-pro"
-]
+CACHED_AVAILABLE_MODELS = None
+
+def get_active_gemini_models():
+    """
+    Google'a doğrudan 'list_models' çağrısı yaparak bu API anahtarına
+    açık olan ve generateContent destekleyen güncel modelleri bulur.
+    """
+    global CACHED_AVAILABLE_MODELS
+    if CACHED_AVAILABLE_MODELS:
+        return CACHED_AVAILABLE_MODELS
+
+    discovered = []
+    if GEMINI_API_KEY:
+        try:
+            genai.configure(api_key=GEMINI_API_KEY)
+            for m in genai.list_models():
+                methods = getattr(m, 'supported_generation_methods', [])
+                if 'generateContent' in methods:
+                    name = m.name.replace("models/", "")
+                    discovered.append(name)
+            
+            # Flash modellerini önceliklendir (hızlı ve hafif)
+            flashes = [m for m in discovered if "flash" in m.lower()]
+            others = [m for m in discovered if "flash" not in m.lower()]
+            discovered = flashes + others
+            print(f"[Gemini Başarılı] Aktif bulunan modeller: {discovered}")
+        except Exception as e:
+            print(f"[Gemini ListModels Hatası]: {e}")
+
+    if discovered:
+        CACHED_AVAILABLE_MODELS = discovered
+        return CACHED_AVAILABLE_MODELS
+
+    # API erişiminde liste gelmezse en güncel standart modeller
+    return ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-flash-latest"]
 
 def generate_ai_executive_summary(accounts, findings, total_debit, total_credit):
     if not GEMINI_API_KEY:
@@ -80,23 +108,25 @@ Lütfen bu verileri VUK, KVK ve Tekdüzen Hesap Planı ilkeleri açısından de�
 Varsa acilen atılması gereken düzeltme adımlarını vurgula.
 """
 
+    models_to_try = get_active_gemini_models()
     last_error = ""
-    for model_name in GEMINI_MODELS_FALLBACK_CHAIN:
+
+    for model_name in models_to_try:
+        clean_name = model_name.replace("models/", "")
         try:
-            clean_name = model_name.replace("models/", "")
             model = genai.GenerativeModel(clean_name)
             response = model.generate_content(prompt)
             if response and response.text:
                 return response.text.strip()
         except Exception as e:
             last_error = str(e)
-            print(f"[Gemini Log] {model_name} başarısız oldu, sıradaki modele geçiliyor. Hata: {last_error}")
+            print(f"[Gemini Log] {clean_name} modeli denenirken hata alındı: {last_error}")
             continue
 
     if "429" in last_error or "quota" in last_error.lower():
-        return "⚠️ Google Gemini API ücretsiz kota sınırına ulaşıldı. Analiz kuralları eksiksiz tamamlandı ancak yapay zekâ metin özeti için 30 saniye sonra tekrar deneyiniz."
+        return "⚠️ Google Gemini API ücretsiz kota sınırına ulaşıldı. Kural analizleri tamamlandı; yapay zekâ metin özeti için 30 saniye sonra tekrar deneyebilirsiniz."
     
-    return f"Yapay zekâ yönetici özeti oluşturulamadı (Son denenen hata: {last_error})"
+    return f"Yapay zekâ yönetici özeti oluşturulamadı (Hata: {last_error})"
 
 # --- GÜVENLİK VE ESNEK KİMLİK DOĞRULAMA ---
 security = HTTPBearer(auto_error=False)
@@ -230,7 +260,6 @@ def run_python_audit(accounts):
         credit = parse_turkish_float(row.get("credit", 0))
 
         # Ana hesap / alt hesap ayrımıyla denkliği doğru hesaplama
-        main_code_part = raw_code.split(".")[0]
         if has_three_digit_codes:
             if len(raw_code) == 3 or (not "." in raw_code and len(raw_code) == 3):
                 total_debit += debit
@@ -306,7 +335,7 @@ def run_python_audit(accounts):
 
     # Mizan Denkliği
     balance_diff = abs(total_debit - total_credit)
-    is_balanced = balance_diff < 1.0  # 1 TL altı kuruş küsuratlarını tolere et
+    is_balanced = balance_diff < 1.0  # 1 TL altı kuruş farklarını tolere et
 
     if not is_balanced and (total_debit > 0 or total_credit > 0):
         findings.insert(0, {

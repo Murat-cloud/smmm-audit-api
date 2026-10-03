@@ -142,107 +142,43 @@ def get_current_user_optional(credentials: HTTPAuthorizationCredentials = Depend
     return user
 
 # --- SMMM MİZAN DENETİM KURAL MATRİSİ ---
-AUDIT_MATRIX = {
-    "100": {
-        "prefix": "100",
-        "name": "Kasa Hesabı",
-        "check": "credit_balance",
-        "level": "KRİTİK",
-        "category": "Kasa Denetimi",
-        "title": "100 Kasa Hesabı Alacak Bakiyesi Veremez",
-        "law": "VUK Madde 134, 175",
-        "desc": "Fiili para mevcudundan fazla çıkış yapılamaz. Kayıt dışı hasılat veya ortaklar carisi hatası işaretidir.",
-        "journal_lines": [
-            {"account": "131 Ortaklardan Alacaklar / 195 Avanslar", "type": "BORÇ"},
-            {"account": "100 Kasa Hesabı", "type": "ALACAK"}
-        ]
-    },
-    "102": {
-        "prefix": "102",
-        "name": "Bankalar Hesabı",
-        "check": "credit_balance",
-        "level": "YÜKSEK",
-        "category": "Banka Hareketleri",
-        "title": "102 Bankalar Hesabı Alacak Bakiyesi Veremez",
-        "law": "MSUGT Temel Kavramlar",
-        "desc": "Banka hesabı eksiye düşemez. Kullanılan Kredili Mevduat Hesabı (KMH) varsa 300 Banka Kredileri hesabına virmanlanmalıdır.",
-        "journal_lines": [
-            {"account": "102 Bankalar Hesabı", "type": "BORÇ"},
-            {"account": "300 Banka Kredileri (KMH)", "type": "ALACAK"}
-        ]
-    },
-    "103": {
-        "prefix": "103",
-        "name": "Verilen Çekler ve Ödeme Emirleri",
-        "check": "debit_balance",
-        "level": "YÜKSEK",
-        "category": "Menkul Kıymetler",
-        "title": "103 Verilen Çekler Borç Bakiyesi Veremez",
-        "law": "Tekdüzen Hesap Planı İlkesi",
-        "desc": "Düzenleyici pasif bir hesaptır; borç bakiyesi vermesi muhasebeleştirme veya iptal kaydı hatasıdır.",
-        "journal_lines": [
-            {"account": "320 Satıcılar", "type": "BORÇ"},
-            {"account": "103 Verilen Çekler Hesabı", "type": "ALACAK"}
-        ]
-    },
-    "120": {
-        "prefix": "120",
-        "name": "Alıcılar Hesabı",
-        "check": "credit_balance",
-        "level": "ORTA",
-        "category": "Cari Hesaplar",
-        "title": "120 Alıcılar Hesabı Alacak Bakiyesi Veremez",
-        "law": "MSUGT Bilanço İlkeleri",
-        "desc": "Müşteriden borcundan fazla tahsilat yapılmıştır. Fazla kısım 340 Alınan Sipariş Avansları hesabına aktarılmalıdır.",
-        "journal_lines": [
-            {"account": "120 Alıcılar Hesabı", "type": "BORÇ"},
-            {"account": "340 Alınan Sipariş Avansları", "type": "ALACAK"}
-        ]
-    },
-    "131": {
-        "prefix": "131",
-        "name": "Ortaklardan Alacaklar",
-        "check": "debit_balance_interest",
-        "level": "KRİTİK",
-        "category": "Örtülü Kazanç / Transfer Fiyatlandırması",
-        "title": "Ortaklar Cari Adat Faizi ve KDV Faturası Riski",
-        "law": "KVK Madde 13, KDVK Madde 24",
-        "desc": "Şirket fonlarının ortaklara faizsiz kullandırılması örtülü kazançtır. Dönem sonlarında adat faizi ve %20 KDV faturası düzenlenmelidir.",
-        "journal_lines": [
-            {"account": "131 Ortaklardan Alacaklar", "type": "BORÇ"},
-            {"account": "649 Diğer Olağan Gelirler (Adat Geliri)", "type": "ALACAK"},
-            {"account": "391 Hesaplanan KDV", "type": "ALACAK"}
-        ]
-    },
-    "320": {
-        "prefix": "320",
-        "name": "Satıcılar Hesabı",
-        "check": "debit_balance",
-        "level": "ORTA",
-        "category": "Cari Hesaplar",
-        "title": "320 Satıcılar Hesabı Borç Bakiyesi Veremez",
-        "law": "MSUGT Bilanço İlkeleri",
-        "desc": "Tedarikçiye faturasından fazla ödeme yapılmıştır. Bakiye 159 Verilen Sipariş Avansları hesabında takip edilmelidir.",
-        "journal_lines": [
-            {"account": "159 Verilen Sipariş Avansları", "type": "BORÇ"},
-            {"account": "320 Satıcılar Hesabı", "type": "ALACAK"}
-        ]
-    },
-    "331": {
-        "prefix": "331",
-        "name": "Ortaklara Borçlar",
-        "check": "credit_balance_equity_risk",
-        "level": "YÜKSEK",
-        "category": "Örtülü Sermaye Riski",
-        "title": "331 Ortaklara Borçlar - Örtülü Sermaye Riski",
-        "law": "KVK Madde 12",
-        "desc": "Ortaklardan alınan borçların toplamı kurum özkaynaklarının 3 katını aşarsa örtülü sermaye sayılır ve faizler gider kabul edilmez.",
-        "journal_lines": [
-            {"account": "331 Ortaklara Borçlar", "type": "BORÇ"},
-            {"account": "102 Bankalar / Sermaye Artırımı", "type": "ALACAK"}
-        ]
+import json
+
+# --- SMMM MİZAN DENETİM KURAL MATRİSİ (JSON'DAN OTOMATİK YÜKLENİR) ---
+def load_audit_rules():
+    """
+    rules.json dosyasını okur. Dosya bulunamazsa veya bozuksa
+    sistemin çökmemesi için temel kurallarla başlar.
+    """
+    if os.path.exists("rules.json"):
+        try:
+            with open("rules.json", "r", encoding="utf-8") as f:
+                rules = json.load(f)
+                print(f"[Bilgi] rules.json başarıyla yüklendi. Toplam kural: {len(rules)}")
+                return rules
+        except Exception as e:
+            print(f"[Hata] rules.json okunurken hata oluştu: {e}")
+    
+    # Dosya yoksa veya hata verirse yedek olarak çalışacak temel kurallar
+    return {
+        "100": {
+            "prefix": "100",
+            "name": "Kasa Hesabı",
+            "check": "credit_balance",
+            "level": "KRİTİK",
+            "category": "Kasa Denetimi",
+            "title": "100 Kasa Hesabı Alacak Bakiyesi Veremez",
+            "law": "VUK Madde 134, 175",
+            "desc": "Kasa hesabı alacak bakiyesi veremez. Fiili noksanlık veya kayıt hatası işaretidir.",
+            "journal_lines": [
+                {"account": "131 Ort. Alacaklar", "type": "BORÇ"},
+                {"account": "100 Kasa Hesabı", "type": "ALACAK"}
+            ]
+        }
     }
-}
+
+# Kuralları uygulamaya yükle
+AUDIT_MATRIX = load_audit_rules()
 
 # --- DİNAMİK MİZAN DENETİM ÇEKİRDEĞİ ---
 def run_python_audit(accounts):

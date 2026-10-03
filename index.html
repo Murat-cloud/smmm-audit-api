@@ -3,13 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMMM & Bağımsız Denetim Akıllı Mizan Platformu</title>
+    <title>AuditSMMM Pro - Akıllı Mizan & Vergi Denetim Platformu</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- SheetJS for Excel Reading & Writing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Marked.js: Yapay Zeka Markdown Formatını Şık HTML'e Çevirir -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- html2pdf.js: Tek Tıkla Kurumsal PDF Raporu Oluşturur -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
     <script>
         tailwind.config = {
             theme: {
@@ -21,6 +26,16 @@
             }
         }
     </script>
+    <style>
+        /* Yapay zeka çıktısı için şık tipografi */
+        .markdown-body h3 { font-size: 1.15rem; font-weight: 800; color: #ffffff; margin-top: 1rem; margin-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 0.25rem; }
+        .markdown-body h4 { font-size: 0.95rem; font-weight: 700; color: #a5b4fc; margin-top: 0.75rem; margin-bottom: 0.25rem; }
+        .markdown-body p { margin-bottom: 0.65rem; line-height: 1.6; color: #e0e7ff; }
+        .markdown-body ul { list-style-type: disc; margin-left: 1.25rem; margin-bottom: 0.75rem; color: #e0e7ff; }
+        .markdown-body li { margin-bottom: 0.35rem; }
+        .markdown-body strong { color: #fbcfe8; font-weight: 700; }
+        .markdown-body hr { border-color: rgba(255,255,255,0.1); margin: 1rem 0; }
+    </style>
 </head>
 <body class="bg-slate-100 font-sans text-slate-800 antialiased h-screen flex overflow-hidden">
 
@@ -75,6 +90,7 @@
             <div id="authSection" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-lg font-bold text-slate-800 flex items-center"><i class="fa-solid fa-lock text-indigo-600 mr-2"></i> 1. Oturum Aç / Kayıt Ol</h2>
+                    <span class="text-xs text-slate-500">Analiz başlatmak için giriş yapmanız önerilir.</span>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <input type="email" id="email" placeholder="E-posta Adresi" value="murat@smmm.com" class="px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
@@ -89,68 +105,95 @@
             <!-- Mizan Yükleme Alanı -->
             <div id="auditSection" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 opacity-60 pointer-events-none transition">
                 <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-lg font-bold text-slate-800 flex items-center"><i class="fa-solid fa-file-excel text-emerald-600 mr-2"></i> 2. Mizan Dosyası Yükle ve Yapay Zekaya Analiz Ettir</h2>
-                    <span class="text-xs text-slate-500">Desteklenen Formatlar: Excel (.xlsx, .xls), CSV</span>
+                    <h2 class="text-lg font-bold text-slate-800 flex items-center"><i class="fa-solid fa-file-excel text-emerald-600 mr-2"></i> 2. Mizan Dosyası Yükle ve Analiz Başlat</h2>
+                    <span class="text-xs text-slate-500">Zirve, Luca, Logo, Mikro formatları desteklenir (.xlsx, .xls)</span>
                 </div>
                 <div class="flex flex-col md:flex-row items-center gap-4">
-                    <div class="flex-1 w-full border-2 border-dashed border-slate-300 rounded-xl p-4 text-center bg-slate-50 hover:bg-slate-100 transition cursor-pointer relative">
+                    <div class="flex-1 w-full border-2 border-dashed border-slate-300 rounded-xl p-5 text-center bg-slate-50 hover:bg-slate-100 transition cursor-pointer relative">
                         <input type="file" id="excelFile" accept=".xlsx, .xls, .csv" class="absolute inset-0 opacity-0 cursor-pointer" onchange="updateFileName(this)">
-                        <div id="file-label-text" class="text-sm text-slate-600 font-medium">Mizan dosyanızı yüklemek için tıklayın veya sürükleyin</div>
+                        <div id="file-label-text" class="text-sm text-slate-600 font-medium flex items-center justify-center">
+                            <i class="fa-solid fa-cloud-arrow-up text-indigo-500 text-xl mr-2"></i> Mizan dosyanızı yüklemek için tıklayın veya sürükleyin
+                        </div>
                     </div>
-                    <button onclick="uploadAndAudit()" class="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-8 py-4 rounded-xl transition shadow-lg shadow-emerald-600/20 flex items-center justify-center">
+                    <button id="btnRunAudit" onclick="uploadAndAudit()" class="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-8 py-4 rounded-xl transition shadow-lg shadow-emerald-600/20 flex items-center justify-center">
                         <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> Yapay Zeka ile Analiz Et
                     </button>
                 </div>
             </div>
 
+            <!-- Yükleniyor Göstergesi -->
+            <div id="loadingIndicator" class="hidden bg-white p-8 rounded-2xl border border-slate-200 shadow-sm text-center">
+                <div class="inline-block animate-spin text-indigo-600 text-4xl mb-3"><i class="fa-solid fa-circle-notch"></i></div>
+                <h4 class="font-bold text-slate-800 text-lg">Mizan Kuralları Denetleniyor & Gemini LLM Raporu Hazırlanıyor...</h4>
+                <p class="text-slate-500 text-sm mt-1">VUK 215, KVK 12 & 13 maddeleri taranıyor, lütfen birkaç saniye bekleyin.</p>
+            </div>
+
             <!-- Sonuçlar ve Risk Paneli -->
             <div id="resultsSection" class="space-y-6 hidden">
-                <!-- Excel İndirme ve Başlık Barı -->
-                <div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                
+                <!-- Rapor Aksiyon Butonları -->
+                <div class="flex flex-col sm:flex-row justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm gap-3">
                     <div>
-                        <h3 class="font-bold text-slate-800 text-lg">Yapay Zeka Denetim Sentezi ve Fiş Önerileri</h3>
-                        <p class="text-xs text-slate-500">YMM standartlarında yapay zeka analizi ve yevmiye önerileri.</p>
+                        <h3 class="font-bold text-slate-800 text-lg">Denetim Sentezi ve Fiş Önerileri</h3>
+                        <p class="text-xs text-slate-500">YMM standartlarında vergi risk analizi ve yevmiye önerileri.</p>
                     </div>
-                    <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2.5 rounded-xl transition text-sm flex items-center shadow-sm">
-                        <i class="fa-solid fa-file-excel mr-2"></i> Raporu Excel Olarak İndir
-                    </button>
-                </div>
-
-                <!-- Yapay Zeka Sentez Kutusu -->
-                <div class="bg-gradient-to-r from-indigo-900 to-slate-900 text-white p-6 rounded-2xl shadow-lg border border-indigo-700/50 relative overflow-hidden">
-                    <div class="absolute right-4 top-4 text-indigo-500/20 text-6xl pointer-events-none"><i class="fa-solid fa-brain"></i></div>
-                    <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-300 mb-2 flex items-center">
-                        <i class="fa-solid fa-wand-magic-sparkles mr-2 text-indigo-400"></i> Yapay Zeka (LLM) Yönetici Özeti ve Analizi
-                    </h4>
-                    <p id="aiSummaryText" class="text-sm text-indigo-100 leading-relaxed font-medium">Yapay zeka analizi bekleniyor...</p>
-                </div>
-
-                <!-- Özet Kartları -->
-                <div id="summaryBox" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <!-- Dinamik dolacak -->
-                </div>
-
-                <!-- Detaylı Risk Tablosu ve Yevmiye Fişleri -->
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="p-6 border-b border-slate-200 flex items-center justify-between">
-                        <h3 class="font-bold text-slate-800 text-lg flex items-center"><i class="fa-solid fa-triangle-exclamation text-amber-500 mr-2"></i> Denetim Bulguları ve Otomatik Düzeltme Fişleri</h3>
-                        <span class="text-xs bg-slate-100 text-slate-600 px-3 py-1 rounded-lg font-medium">VUK / KVK / Yevmiye Matrisi</span>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="bg-slate-50 text-slate-600 uppercase text-[11px] font-bold tracking-wider border-b border-slate-200">
-                                    <th class="p-4">Kod</th>
-                                    <th class="p-4">Hesap Adı & Risk Detayı</th>
-                                    <th class="p-4">Risk Seviyesi</th>
-                                    <th class="p-4">Kategori / Dayanak</th>
-                                    <th class="p-4 text-right">Tutar (TL)</th>
-                                </tr>
-                            </thead>
-                            <tbody id="findingsTableBody" class="divide-y divide-slate-100 text-sm"></tbody>
-                        </table>
+                    <div class="flex space-x-2 w-full sm:w-auto">
+                        <button onclick="exportToPDF()" class="flex-1 sm:flex-none bg-rose-600 hover:bg-rose-700 text-white font-medium px-4 py-2.5 rounded-xl transition text-sm flex items-center justify-center shadow-sm">
+                            <i class="fa-solid fa-file-pdf mr-2"></i> PDF Rapor İndir
+                        </button>
+                        <button onclick="exportToExcel()" class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2.5 rounded-xl transition text-sm flex items-center justify-center shadow-sm">
+                            <i class="fa-solid fa-file-excel mr-2"></i> Excel İndir
+                        </button>
                     </div>
                 </div>
+
+                <!-- PDF İÇİN YAZDIRILABİLİR ALAN BAŞLANGICI -->
+                <div id="printableReportArea" class="space-y-6">
+
+                    <!-- Yapay Zeka Sentez Kutusu -->
+                    <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-7 rounded-2xl shadow-xl border border-indigo-700/50 relative overflow-hidden">
+                        <div class="absolute right-4 top-4 text-indigo-500/20 text-7xl pointer-events-none"><i class="fa-solid fa-brain"></i></div>
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-300 mb-3 flex items-center">
+                            <i class="fa-solid fa-wand-magic-sparkles mr-2 text-indigo-400"></i> Kıdemli Denetçi & YMM Yapay Zekâ (LLM) Analiz Raporu
+                        </h4>
+                        <!-- Markdown renderlanan yer -->
+                        <div id="aiSummaryText" class="markdown-body text-sm text-indigo-100">
+                            Yapay zeka analizi bekleniyor...
+                        </div>
+                    </div>
+
+                    <!-- Özet Kartları -->
+                    <div id="summaryBox" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <!-- Dinamik dolacak -->
+                    </div>
+
+                    <!-- Detaylı Risk Tablosu ve Yevmiye Fişleri -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-5 border-b border-slate-200 flex items-center justify-between">
+                            <h3 class="font-bold text-slate-800 text-base flex items-center">
+                                <i class="fa-solid fa-triangle-exclamation text-amber-500 mr-2"></i> Denetim Bulguları ve Otomatik Düzeltme Fişleri
+                            </h3>
+                            <span class="text-xs bg-slate-100 text-slate-600 px-3 py-1 rounded-lg font-medium">VUK / KVK / TDHP Matrisi</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-50 text-slate-600 uppercase text-[11px] font-bold tracking-wider border-b border-slate-200">
+                                        <th class="p-4">Kod</th>
+                                        <th class="p-4">Hesap Adı & Risk Açıklaması</th>
+                                        <th class="p-4">Risk</th>
+                                        <th class="p-4">Kategori / Kanun</th>
+                                        <th class="p-4 text-right">Tutar (TL)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="findingsTableBody" class="divide-y divide-slate-100 text-sm"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+                <!-- PDF ALANI BİTİŞİ -->
+
             </div>
 
         </div>
@@ -170,7 +213,7 @@
 
         function updateFileName(input) {
             if (input.files && input.files[0]) {
-                document.getElementById('file-label-text').innerText = "Seçilen Dosya: " + input.files[0].name;
+                document.getElementById('file-label-text').innerHTML = `<i class="fa-solid fa-file-excel text-emerald-600 mr-2"></i> Seçilen: <strong>${input.files[0].name}</strong>`;
             }
         }
 
@@ -245,28 +288,46 @@
             const file = fileInput.files[0];
             const reader = new FileReader();
 
-            reader.onload = async function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+            // Yükleme animasyonunu aç
+            document.getElementById("loadingIndicator").classList.remove("hidden");
+            document.getElementById("resultsSection").classList.add("hidden");
+            document.getElementById("btnRunAudit").disabled = true;
 
-                let accounts = [];
-                for (let i = 1; i < rows.length; i++) {
-                    let r = rows[i];
-                    if (r && r.length >= 4) {
+            reader.onload = async function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+                    let accounts = [];
+                    // Başlıkları akıllı atlama: İlk sütunu hesap koduna benzeyen satırları bul
+                    for (let i = 0; i < rows.length; i++) {
+                        let r = rows[i];
+                        if (!r || r.length < 4) continue;
+
+                        let codeStr = String(r[0] || "").trim();
+                        // Hesap kodu en az 3 basamaklı sayı veya nokta içeren format olmalı (örn: 100, 100.01)
+                        if (!codeStr || isNaN(parseInt(codeStr.charAt(0)))) continue;
+
                         accounts.push({
-                            code: String(r[0] || ""),
-                            name: String(r[1] || ""),
-                            debit: parseFloat(r[2]) || 0,
-                            credit: parseFloat(r[3]) || 0,
-                            debitBal: parseFloat(r[4]) || 0,
-                            creditBal: parseFloat(r[5]) || 0
+                            code: codeStr,
+                            name: String(r[1] || "").trim(),
+                            // DİKKAT: Sayıları doğrudan ham gönderiyoruz; Python backend parse_turkish_float temizleyecek
+                            debit: r[2] != null ? r[2] : 0,
+                            credit: r[3] != null ? r[3] : 0,
+                            debitBal: r[4] != null ? r[4] : 0,
+                            creditBal: r[5] != null ? r[5] : 0
                         });
                     }
-                }
 
-                try {
+                    if (accounts.length === 0) {
+                        alert("Mizan dosyasında geçerli hesap satırları bulunamadı. Lütfen standart formatta bir mizan yükleyin.");
+                        document.getElementById("loadingIndicator").classList.add("hidden");
+                        document.getElementById("btnRunAudit").disabled = false;
+                        return;
+                    }
+
                     const res = await fetch(`${API_URL}/audit/run`, {
                         method: "POST",
                         headers: { 
@@ -275,7 +336,11 @@
                         },
                         body: JSON.stringify({ accounts })
                     });
+                    
                     const auditResult = await res.json();
+                    document.getElementById("loadingIndicator").classList.add("hidden");
+                    document.getElementById("btnRunAudit").disabled = false;
+
                     if (res.ok) {
                         globalAuditResult = auditResult;
                         renderResults(auditResult);
@@ -283,7 +348,9 @@
                         alert("Denetim hatası: " + (auditResult.detail || "İşlem başarısız"));
                     }
                 } catch (err) {
-                    alert("API bağlantı hatası: " + err.message);
+                    document.getElementById("loadingIndicator").classList.add("hidden");
+                    document.getElementById("btnRunAudit").disabled = false;
+                    alert("İşlem hatası: " + err.message);
                 }
             };
             reader.readAsArrayBuffer(file);
@@ -292,14 +359,20 @@
         function renderResults(result) {
             document.getElementById("resultsSection").classList.remove("hidden");
             
-            // Yapay Zeka Özetini Ekrana Bas
-            document.getElementById("aiSummaryText").innerText = result.ai_executive_summary || "Yapay zeka özeti bulunamadı.";
+            // Yapay Zeka Markdown Çıktısını Marked.js ile HTML'e çevirip bas
+            const rawAiSummary = result.ai_executive_summary || "Yapay zeka özeti bulunamadı.";
+            if (typeof marked !== 'undefined') {
+                document.getElementById("aiSummaryText").innerHTML = marked.parse(rawAiSummary);
+            } else {
+                document.getElementById("aiSummaryText").innerText = rawAiSummary;
+            }
 
+            // Özet Kartları
             const summaryBox = document.getElementById("summaryBox");
             summaryBox.innerHTML = `
                 <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                     <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Mizan Durumu</p>
-                    <h3 class="text-xl font-bold mt-1 ${result.is_balanced ? 'text-emerald-600' : 'text-rose-600'}">${result.is_balanced ? 'Dengede' : 'Dengesiz'}</h3>
+                    <h3 class="text-xl font-bold mt-1 ${result.is_balanced ? 'text-emerald-600' : 'text-rose-600'}">${result.is_balanced ? 'Dengede (Eşit)' : 'Dengesiz (Riskli)'}</h3>
                 </div>
                 <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                     <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Toplam Borç</p>
@@ -311,7 +384,7 @@
                 </div>
                 <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                     <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tespit Edilen Risk</p>
-                    <h3 class="text-xl font-bold mt-1 text-indigo-600">${result.findings_count || 0}</h3>
+                    <h3 class="text-xl font-bold mt-1 text-indigo-600">${result.findings_count || 0} Adet</h3>
                 </div>
             `;
 
@@ -365,6 +438,24 @@
             });
         }
 
+        // PDF İndirme Fonksiyonu
+        function exportToPDF() {
+            if (!globalAuditResult) {
+                alert("Önce bir mizan analizi yapmalısınız!");
+                return;
+            }
+            const element = document.getElementById("printableReportArea");
+            const opt = {
+                margin:       [10, 10, 10, 10],
+                filename:     'AuditSMMM_Mizan_Denetim_Raporu.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save();
+        }
+
+        // Excel İndirme Fonksiyonu
         function exportToExcel() {
             if (!globalAuditResult || !globalAuditResult.findings) {
                 alert("İndirilecek analiz raporu bulunamadı!");

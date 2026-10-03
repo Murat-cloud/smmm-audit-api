@@ -1,98 +1,107 @@
 from fastapi import FastAPI, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-from database import engine, Base, get_db
-import models, schemas, auth
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.responses import HTMLResponse
+from sqlalchemy.orm import Session
 import os
 import google.generativeai as genai
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+# Proje içi modülleriniz (database.py, models.py, schemas.py, auth.py)
+from database import engine, Base, get_db
+import models, schemas, auth
 
 app = FastAPI(
     title="SMMM Mizan Denetim SaaS API",
-    version="3.6.0"
+    version="4.0.0"
 )
 
-# --- EVRENSEL CORS AYARLARI (CORS Engeline Kesin Çözüm) ---
+# --- EVRENSEL CORS AYARLARI ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Tüm kökenlere izin ver
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  # Tüm HTTP metodlarına izin ver (GET, POST vb.)
-    allow_headers=["*"],  # Tüm başlıklara (Authorization dahil) izin ver
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# Tabloları oluştur
+# Veritabanı tablolarını oluştur
 Base.metadata.create_all(bind=engine)
 
-# --- GERÇEK GEMINI API ENTEGRASYONU (Dinamik ve Akıllı Sürüm) ---
+# --- GÜVENLİ TÜRK FORMATI SAYI ÇEVİRİCİ ---
+def parse_turkish_float(val) -> float:
+    """
+    Türk muhasebe programlarından (Zirve, Luca, Logo) gelen
+    1.250.500,50 veya 1250500.50 gibi sayı formatlarını güvenle float yapar.
+    """
+    if val is None or val == "" or val == "-" or val == "None":
+        return 0.0
+    if isinstance(val, (int, float)):
+        return float(val)
+    
+    val_str = str(val).strip()
+    if "," in val_str and "." in val_str:
+        val_str = val_str.replace(".", "").replace(",", ".")
+    elif "," in val_str:
+        val_str = val_str.replace(",", ".")
+        
+    try:
+        return float(val_str)
+    except ValueError:
+        return 0.0
+
+# --- GEMINI YAPAY ZEKA MOTORU (Gemini 3.8 Öncelikli + Kademeli Fallback) ---
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
-def get_best_gemini_model():
-    """
-    Google'ın o an desteklediği en güncel modeli otomatik olarak seçer.
-    Hatalı model ismi sorununu kökten çözer.
-    """
-    try:
-        for m in genai.list_models():
-            if 'generateContent' in m.supported_generation_methods:
-                if 'gemini' in m.name.lower():
-                    return m.name
-    except Exception as e:
-        print(f"Model listelenirken hata oluştu: {e}")
-    
-    return "gemini-1.5-flash"
+# Denenecek modellerin hiyerarşisi (Gemini 3.8 Flash ilk sırada)
+GEMINI_MODELS_FALLBACK_CHAIN = [
+    "gemini-3.8-flash",
+    "gemini-2.5-flash",
+    "gemini-1.5-flash",
+    "gemini-1.5-pro"
+]
 
 def generate_ai_executive_summary(accounts, findings, total_debit, total_credit):
     if not GEMINI_API_KEY:
-        return "⚠️ Gemini API Anahtarı (GEMINI_API_KEY) Render ortamında tanımlı değil. Lütfen Render panelinden Environment Variables kısmına anahtarınızı ekleyin."
+        return "⚠️ Gemini API Anahtarı (GEMINI_API_KEY) ortam değişkenlerinde tanımlı değil. Lütfen Render panelinden Environment Variables alanına anahtarınızı ekleyin."
 
-    try:
-        # En güncel modeli dinamik olarak alıyoruz
-        model_name = get_best_gemini_model()
-        
-        prompt = f"""
-        Sen kıdemli bir Yeminli Mali Müşavir (YMM) ve Bağımsız Denetçisin. 
-        Aşağıda bir şirkete ait mizan özeti ve tespit edilen risk bulguları yer almaktadır. 
-        Bu verileri VUK, KVK ve muhasebe ilkeleri açısından profesyonel ve yönetici özeti formatında (en fazla 3-4 cümleyle) Türkçe olarak yorumla:
+    prompt = f"""
+Sen kıdemli bir Yeminli Mali Müşavir (YMM) ve Bağımsız Denetçisin. 
+Aşağıda bir şirkete ait mizan özeti ve kural motoru tarafından tespit edilen vergi risk bulguları yer almaktadır:
 
-        - Toplam Borç: {total_debit:,.2f} TL
-        - Toplam Alacak: {total_credit:,.2f} TL
-        - Tespit Edilen Risk Sayısı: {len(findings)}
-        - Bulgular Özeti: {str(findings[:3])}
+- Toplam Borç Tutarı: {total_debit:,.2f} TL
+- Toplam Alacak Tutarı: {total_credit:,.2f} TL
+- Tespit Edilen Risk Sayısı: {len(findings)}
+- Öne Çıkan Bulgular: {str(findings[:4])}
 
-        Lütfen şirketin mali durumunu ve acilen yapılması gerekenleri net bir dille özetle:
-        """
-        
-        # Deneme yanılma ile güvenli çağrı
-        models_to_try = [model_name, 'gemini-1.5-flash', 'gemini-1.5-pro']
-        
-        for current_model in models_to_try:
-            try:
-                # Model ismini temizliyoruz (models/ prefix'i bazen sorun olabiliyor)
-                clean_model_name = current_model.replace("models/", "")
-                model = genai.GenerativeModel(clean_model_name)
-                response = model.generate_content(prompt)
-                if response and response.text:
-                    return response.text.strip()
-            except Exception as sub_e:
-                print(f"{current_model} denenirken hata: {sub_e}")
-                continue
-                
-        return "Yapay zeka yanıt oluşturamadı."
+Lütfen bu verileri VUK, KVK ve Tekdüzen Hesap Planı ilkeleri açısından değerlendir.
+Şirket yönetimi ve mali müşavir için 3-4 cümlelik, net, profesyonel bir 'Yönetici Denetim Özeti' yaz.
+Varsa acilen atılması gereken düzeltme adımlarını vurgula.
+"""
 
-    except Exception as e:
-        return f"Yapay Zeka Sentez Hatası: {str(e)}"
+    last_error = ""
+    for model_name in GEMINI_MODELS_FALLBACK_CHAIN:
+        try:
+            clean_name = model_name.replace("models/", "")
+            model = genai.GenerativeModel(clean_name)
+            response = model.generate_content(prompt)
+            if response and response.text:
+                return response.text.strip()
+        except Exception as e:
+            last_error = str(e)
+            print(f"[Gemini Log] {model_name} başarısız oldu, sıradaki modele geçiliyor. Hata: {last_error}")
+            continue
+
+    if "429" in last_error or "quota" in last_error.lower():
+        return "⚠️ Google Gemini API ücretsiz kota sınırına ulaşıldı. Analiz kuralları eksiksiz tamamlandı ancak yapay zekâ metin özeti için 30 saniye sonra tekrar deneyiniz."
+    
+    return f"Yapay zekâ yönetici özeti oluşturulamadı (Son denenen hata: {last_error})"
 
 # --- GÜVENLİK VE ESNEK KİMLİK DOĞRULAMA ---
 security = HTTPBearer(auto_error=False)
 
 def get_current_user_optional(credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)):
-    """
-    Şimdilik testlerin takılmaması için token olsa da olmasa da çökertmeyen, 
-    kullanıcıyı esnek tanıyan yapı.
-    """
     if not credentials:
         return None
     token = credentials.credentials
@@ -102,8 +111,7 @@ def get_current_user_optional(credentials: HTTPAuthorizationCredentials = Depend
     user = db.query(models.User).filter(models.User.email == email).first()
     return user
 
-# --- DENETİM MOTORU ---
-# --- SMMM MİZAN DENETİM KURAL MATRİSİ (Dinamik Altyapı) ---
+# --- SMMM MİZAN DENETİM KURAL MATRİSİ ---
 AUDIT_MATRIX = {
     "100": {
         "prefix": "100",
@@ -113,10 +121,52 @@ AUDIT_MATRIX = {
         "category": "Kasa Denetimi",
         "title": "100 Kasa Hesabı Alacak Bakiyesi Veremez",
         "law": "VUK Madde 134, 175",
-        "desc": "Kasa hesabının alacak bakiyesi vermesi fiili kasa noksanlığı veya kayıt hatası gösterir.",
+        "desc": "Fiili para mevcudundan fazla çıkış yapılamaz. Kayıt dışı hasılat veya ortaklar carisi hatası işaretidir.",
         "journal_lines": [
-            {"account": "195 İş V. Pers. Avanslar / 131 Ort. Alacaklar", "type": "BORÇ"},
+            {"account": "131 Ortaklardan Alacaklar / 195 Avanslar", "type": "BORÇ"},
             {"account": "100 Kasa Hesabı", "type": "ALACAK"}
+        ]
+    },
+    "102": {
+        "prefix": "102",
+        "name": "Bankalar Hesabı",
+        "check": "credit_balance",
+        "level": "YÜKSEK",
+        "category": "Banka Hareketleri",
+        "title": "102 Bankalar Hesabı Alacak Bakiyesi Veremez",
+        "law": "MSUGT Temel Kavramlar",
+        "desc": "Banka hesabı eksiye düşemez. Kullanılan Kredili Mevduat Hesabı (KMH) varsa 300 Banka Kredileri hesabına virmanlanmalıdır.",
+        "journal_lines": [
+            {"account": "102 Bankalar Hesabı", "type": "BORÇ"},
+            {"account": "300 Banka Kredileri (KMH)", "type": "ALACAK"}
+        ]
+    },
+    "103": {
+        "prefix": "103",
+        "name": "Verilen Çekler ve Ödeme Emirleri",
+        "check": "debit_balance",
+        "level": "YÜKSEK",
+        "category": "Menkul Kıymetler",
+        "title": "103 Verilen Çekler Borç Bakiyesi Veremez",
+        "law": "Tekdüzen Hesap Planı İlkesi",
+        "desc": "Düzenleyici pasif bir hesaptır; borç bakiyesi vermesi muhasebeleştirme veya iptal kaydı hatasıdır.",
+        "journal_lines": [
+            {"account": "320 Satıcılar", "type": "BORÇ"},
+            {"account": "103 Verilen Çekler Hesabı", "type": "ALACAK"}
+        ]
+    },
+    "120": {
+        "prefix": "120",
+        "name": "Alıcılar Hesabı",
+        "check": "credit_balance",
+        "level": "ORTA",
+        "category": "Cari Hesaplar",
+        "title": "120 Alıcılar Hesabı Alacak Bakiyesi Veremez",
+        "law": "MSUGT Bilanço İlkeleri",
+        "desc": "Müşteriden borcundan fazla tahsilat yapılmıştır. Fazla kısım 340 Alınan Sipariş Avansları hesabına aktarılmalıdır.",
+        "journal_lines": [
+            {"account": "120 Alıcılar Hesabı", "type": "BORÇ"},
+            {"account": "340 Alınan Sipariş Avansları", "type": "ALACAK"}
         ]
     },
     "131": {
@@ -124,41 +174,83 @@ AUDIT_MATRIX = {
         "name": "Ortaklardan Alacaklar",
         "check": "debit_balance_interest",
         "level": "KRİTİK",
-        "category": "Ortaklar Adat Riski",
-        "title": "Ortaklar Cari Adat Faizi ve %20 KDV Faturası Kontrolü",
-        "law": "KVK Madde 13 (Örtülü Kazanç)",
-        "desc": "Ortaklara kullandırılan fonlar için emsal faiz hesaplanmalı ve KDV'li fatura düzenlenmelidir.",
+        "category": "Örtülü Kazanç / Transfer Fiyatlandırması",
+        "title": "Ortaklar Cari Adat Faizi ve KDV Faturası Riski",
+        "law": "KVK Madde 13, KDVK Madde 24",
+        "desc": "Şirket fonlarının ortaklara faizsiz kullandırılması örtülü kazançtır. Dönem sonlarında adat faizi ve %20 KDV faturası düzenlenmelidir.",
         "journal_lines": [
-            {"account": "649 Diğer Olağan Gelir ve Karlar (Adat Faizi)", "type": "ALACAK"},
-            {"account": "391 Hesaplanan KDV", "type": "ALACAK"},
-            {"account": "131 Ortaklardan Alacaklar", "type": "BORÇ"}
+            {"account": "131 Ortaklardan Alacaklar", "type": "BORÇ"},
+            {"account": "649 Diğer Olağan Gelirler (Adat Geliri)", "type": "ALACAK"},
+            {"account": "391 Hesaplanan KDV", "type": "ALACAK"}
+        ]
+    },
+    "320": {
+        "prefix": "320",
+        "name": "Satıcılar Hesabı",
+        "check": "debit_balance",
+        "level": "ORTA",
+        "category": "Cari Hesaplar",
+        "title": "320 Satıcılar Hesabı Borç Bakiyesi Veremez",
+        "law": "MSUGT Bilanço İlkeleri",
+        "desc": "Tedarikçiye faturasından fazla ödeme yapılmıştır. Bakiye 159 Verilen Sipariş Avansları hesabında takip edilmelidir.",
+        "journal_lines": [
+            {"account": "159 Verilen Sipariş Avansları", "type": "BORÇ"},
+            {"account": "320 Satıcılar Hesabı", "type": "ALACAK"}
+        ]
+    },
+    "331": {
+        "prefix": "331",
+        "name": "Ortaklara Borçlar",
+        "check": "credit_balance_equity_risk",
+        "level": "YÜKSEK",
+        "category": "Örtülü Sermaye Riski",
+        "title": "331 Ortaklara Borçlar - Örtülü Sermaye Riski",
+        "law": "KVK Madde 12",
+        "desc": "Ortaklardan alınan borçların toplamı kurum özkaynaklarının 3 katını aşarsa örtülü sermaye sayılır ve faizler gider kabul edilmez.",
+        "journal_lines": [
+            {"account": "331 Ortaklara Borçlar", "type": "BORÇ"},
+            {"account": "102 Bankalar / Sermaye Artırımı", "type": "ALACAK"}
         ]
     }
 }
 
-# --- DİNAMİK MATRİS TABANLI DENETİM MOTORU ---
+# --- DİNAMİK MİZAN DENETİM ÇEKİRDEĞİ ---
 def run_python_audit(accounts):
     findings = []
     total_debit = 0.0
     total_credit = 0.0
-    
+
+    # Çift saymayı önleme kontrolü (Mizanda 3 haneli ana hesaplar var mı?)
+    has_three_digit_codes = any(len(str(r.get("code", "")).strip().split(".")[0]) == 3 for r in accounts)
+
     for row in accounts:
-        code = str(row.get("code", "")).strip()
+        raw_code = str(row.get("code", "")).strip()
         name = str(row.get("name", "")).strip()
         debit = parse_turkish_float(row.get("debit", 0))
         credit = parse_turkish_float(row.get("credit", 0))
+
+        # Ana hesap / alt hesap ayrımıyla denkliği doğru hesaplama
+        main_code_part = raw_code.split(".")[0]
+        if has_three_digit_codes:
+            if len(raw_code) == 3 or (not "." in raw_code and len(raw_code) == 3):
+                total_debit += debit
+                total_credit += credit
+        else:
+            total_debit += debit
+            total_credit += credit
+
+        # Bakiye hesaplama
         debit_bal = parse_turkish_float(row.get("debitBal", debit - credit if debit > credit else 0))
         credit_bal = parse_turkish_float(row.get("creditBal", credit - debit if credit > debit else 0))
-        
-        total_debit += debit
-        total_credit += credit
-        
-        # Matris Üzerinden Kontrol
+
+        # Kural Matrisi Eşleştirmesi
         for key, rule in AUDIT_MATRIX.items():
-            if code.startswith(rule["prefix"]):
-                if rule["check"] == "credit_balance" and credit_bal > 0:
+            if raw_code == rule["prefix"] or raw_code.startswith(rule["prefix"] + ".") or raw_code.startswith(rule["prefix"]):
+                
+                # 1. Kural: Alacak Bakiyesi Veremez
+                if rule["check"] == "credit_balance" and credit_bal > 0.01:
                     findings.append({
-                        "code": code, "name": name,
+                        "code": raw_code, "name": name,
                         "level": rule["level"], "category": rule["category"],
                         "title": rule["title"], "amount": credit_bal, "law": rule["law"],
                         "journal_suggestion": {
@@ -166,51 +258,67 @@ def run_python_audit(accounts):
                             "lines": [{"account": l["account"], "type": l["type"], "amount": credit_bal} for l in rule["journal_lines"]]
                         }
                     })
-                elif rule["check"] == "debit_balance_interest" and debit_bal > 0:
+
+                # 2. Kural: Borç Bakiyesi Veremez
+                elif rule["check"] == "debit_balance" and debit_bal > 0.01:
+                    findings.append({
+                        "code": raw_code, "name": name,
+                        "level": rule["level"], "category": rule["category"],
+                        "title": rule["title"], "amount": debit_bal, "law": rule["law"],
+                        "journal_suggestion": {
+                            "description": rule["desc"],
+                            "lines": [{"account": l["account"], "type": l["type"], "amount": debit_bal} for l in rule["journal_lines"]]
+                        }
+                    })
+
+                # 3. Kural: 131 Adatlandırma Hesabı
+                elif rule["check"] == "debit_balance_interest" and debit_bal > 0.01:
                     interest_amt = debit_bal * 0.05
                     vat_amt = interest_amt * 0.20
                     total_amt = interest_amt + vat_amt
-                    
-                    # Güvenli muavin hesap eşleştirmesi (IndexError çökmelerini önler)
+
                     j_lines = rule.get("journal_lines", [])
-                    acc_interest = j_lines[0]["account"] if len(j_lines) > 0 else "642.01"
-                    acc_vat = j_lines[1]["account"] if len(j_lines) > 1 else "391.01"
-                    acc_total = j_lines[2]["account"] if len(j_lines) > 2 else "131.01"
-                    
                     findings.append({
-                        "code": code, "name": name,
+                        "code": raw_code, "name": name,
                         "level": rule["level"], "category": rule["category"],
                         "title": rule["title"], "amount": debit_bal, "law": rule["law"],
                         "journal_suggestion": {
                             "description": rule["desc"],
                             "lines": [
-                                {"account": acc_interest, "type": "ALACAK", "amount": interest_amt},
-                                {"account": acc_vat, "type": "ALACAK", "amount": vat_amt},
-                                {"account": acc_total, "type": "BORÇ", "amount": total_amt}
+                                {"account": j_lines[0]["account"], "type": "BORÇ", "amount": total_amt},
+                                {"account": j_lines[1]["account"], "type": "ALACAK", "amount": interest_amt},
+                                {"account": j_lines[2]["account"], "type": "ALACAK", "amount": vat_amt}
                             ]
                         }
                     })
 
+                # 4. Kural: 331 Örtülü Sermaye Kontrolü
+                elif rule["check"] == "credit_balance_equity_risk" and credit_bal > 0.01:
+                    findings.append({
+                        "code": raw_code, "name": name,
+                        "level": rule["level"], "category": rule["category"],
+                        "title": rule["title"], "amount": credit_bal, "law": rule["law"],
+                        "journal_suggestion": {
+                            "description": rule["desc"],
+                            "lines": [{"account": l["account"], "type": l["type"], "amount": credit_bal} for l in rule["journal_lines"]]
+                        }
+                    })
+
+    # Mizan Denkliği
     balance_diff = abs(total_debit - total_credit)
-    is_balanced = balance_diff < 0.05
-    
-    if not is_balanced:
+    is_balanced = balance_diff < 1.0  # 1 TL altı kuruş küsuratlarını tolere et
+
+    if not is_balanced and (total_debit > 0 or total_credit > 0):
         findings.insert(0, {
-            "code": "GENEL", "name": "Mizan Denkliği",
+            "code": "DENK", "name": "Mizan Denkliği",
             "level": "KRİTİK", "category": "Mizan Denkliği",
             "title": f"Mizan Borç ve Alacak Toplamı Eşit Değil! Fark: {balance_diff:,.2f} TL",
             "amount": balance_diff, "law": "VUK Madde 215",
-            "journal_suggestion": {"description": "Mizan denkleşmemektedir.", "lines": []}
+            "journal_suggestion": {"description": "Mizan borç ve alacak toplamları birbirine eşit olmalıdır.", "lines": []}
         })
 
-    # YAPAY ZEKA KORUMA KALKANI: Google API kotası dolduğunda tüm sistemin çökmesini engeller
-    try:
-        ai_summary = generate_ai_executive_summary(accounts, findings, total_debit, total_credit)
-    except Exception as e:
-        if "429" in str(e) or "quota" in str(e).lower():
-            ai_summary = "Yapay Zeka Sentez Hatası: Google Gemini API ücretsiz dakika limitiniz (Max 5 istek) doldu. Sisteminizin çökmemesi için bu geçici özet üretildi. Lütfen 30 saniye sonra tekrar deneyiniz."
-        else:
-            ai_summary = f"Yapay zeka özeti oluşturulurken bir teknik hata oluştu: {str(e)}"
+    # Gemini Yönetici Özeti
+    ai_summary = generate_ai_executive_summary(accounts, findings, total_debit, total_credit)
 
     return {
         "is_balanced": is_balanced,
@@ -230,11 +338,11 @@ def register(user: dict, db: Session = Depends(get_db)):
     password = user.get("password")
     full_name = user.get("full_name", "Test SMMM")
     firm_name = user.get("firm_name", "Test Mali Müşavirlik")
-    
+
     db_user = db.query(models.User).filter(models.User.email == email).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Bu e-posta adresi ile zaten kayıt olunmuş.")
-    
+
     hashed_password = auth.get_password_hash(password)
     new_user = models.User(
         email=email,
@@ -247,7 +355,7 @@ def register(user: dict, db: Session = Depends(get_db)):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    
+
     access_token = auth.create_access_token(data={"sub": new_user.email})
     return {"access_token": access_token, "token_type": "bearer"}
 
@@ -255,11 +363,11 @@ def register(user: dict, db: Session = Depends(get_db)):
 def login(credentials: dict, db: Session = Depends(get_db)):
     email = credentials.get("email")
     password = credentials.get("password")
-    
+
     db_user = db.query(models.User).filter(models.User.email == email).first()
     if not db_user or not auth.verify_password(password, db_user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Geçersiz e-posta veya şifre.")
-    
+
     access_token = auth.create_access_token(data={"sub": db_user.email})
     return {"access_token": access_token, "token_type": "bearer"}
 
@@ -268,16 +376,13 @@ def run_audit(payload: dict, current_user = Depends(get_current_user_optional)):
     accounts = payload.get("accounts", [])
     if not accounts:
         raise HTTPException(status_code=400, detail="Denetlenecek mizan hesapları bulunamadı.")
-    
+
     result = run_python_audit(accounts)
     return result
-
-from fastapi.responses import HTMLResponse
-import os
 
 @app.get("/", response_class=HTMLResponse)
 def read_root():
     if os.path.exists("index.html"):
         with open("index.html", "r", encoding="utf-8") as f:
             return f.read()
-    return "index.html dosyası sunucuda bulunamadı!"
+    return "<h1>SMMM Mizan Denetim API Çalışıyor</h1><p>index.html dosyası bulunamadı.</p>"

@@ -5,6 +5,13 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 import os
 import google.generativeai as genai
+import os
+import re
+import math
+
+from supabase import create_client
+from sentence_transformers import SentenceTransformer, CrossEncoder
+from rank_bm25 import BM25Okapi
 
 from database import engine, Base, get_db
 import models, schemas, auth

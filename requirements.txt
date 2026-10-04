@@ -8,3 +8,6 @@ python-jose[cryptography]
 python-multipart
 email-validator
 google-generativeai
+sentence-transformers
+rank-bm25
+supabase

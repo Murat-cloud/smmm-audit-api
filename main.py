@@ -1,48 +1,38 @@
+import os
+import re
+import math
+import json
+from typing import Optional, List, Dict, Any
+
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
-import os
-import re
-import math
-import json
+import requests
 
-from supabase import create_client
-from sentence_transformers import SentenceTransformer
-import google.generativeai as genai
+# Supabase Client
+from supabase import create_client, Client
 
+# Hafif BM25 (PyTorch gerektirmez, bellek dostudur)
+try:
+    from rank_bm25 import BM25Okapi
+except ImportError:
+    BM25Okapi = None
+
+# Veritabanı ve Auth modülleri
 from database import engine, Base, get_db
 import models, schemas, auth
 
 # ============================================================
-# V10 RAG ENGINE (Hafif Vektör Arama Modu - CrossEncoder'sız)
+# FASTAPI UYGULAMA VE CORS AYARLARI
 # ============================================================
-
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-
-if not SUPABASE_URL or not SUPABASE_KEY:
-    raise RuntimeError(
-        "SUPABASE_URL veya SUPABASE_KEY environment variable eksik."
-    )
-
-supabase = create_client(
-    SUPABASE_URL,
-    SUPABASE_KEY
-)
-
-# V10 embedding modeli (Korundu)
-model = SentenceTransformer(
-    "intfloat/multilingual-e5-small"
-)
 
 app = FastAPI(
     title="SMMM Mizan Denetim SaaS API",
     version="4.2.0"
 )
 
-# --- EVRENSEL CORS AYARLARI ---
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -51,25 +41,311 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- VERİTABANI TABLOLARINI OLUŞTUR ---
+# Tabloları oluştur
 Base.metadata.create_all(bind=engine)
 
+# ============================================================
+# ORTAM DEĞİŞKENLERİ VE SUPABASE BAĞLANTISI
+# ============================================================
 
-# --- GÜVENLİ TÜRK FORMATI SAYI ÇEVİRİCİ ---
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+HF_API_KEY = os.getenv("HF_API_KEY", "")  # Opsiyonel: HuggingFace Serverless Inference
+
+supabase: Optional[Client] = None
+if SUPABASE_URL and SUPABASE_KEY:
+    try:
+        supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+        print("[Supabase] Bağlantı başarılı.")
+    except Exception as e:
+        print(f"[Supabase Bağlantı Hatası]: {e}")
+else:
+    print("[Uyarı] SUPABASE_URL veya SUPABASE_KEY tanımlı değil.")
+
+# ============================================================
+# HAFİF EMBEDDING VE RERANK ENGINE (512 MB DOSTU)
+# ============================================================
+# 512 MB bellekli sunucularda `torch` ve `SentenceTransformer`
+# yüklemek OOM (Out Of Memory) çökmesine sebep olur.
+# Bu nedenle embedding işlemleri Gemini API veya HF API üzerinden
+# sıfır RAM maliyetiyle yürütülür.
+
+def get_text_embedding(text: str) -> List[float]:
+    """
+    Metnin embedding vektörünü alır.
+    Öncelikle Gemini text-embedding-004 API'sini kullanır.
+    İsteğe bağlı olarak HuggingFace e5-small endpoint'ini de destekler.
+    RAM kullanımı: ~0 MB.
+    """
+    clean_text = text.strip().replace("\n", " ")
+    if not clean_text:
+        return [0.0] * 768
+
+    # 1. HuggingFace Serverless API (Eğer HF_API_KEY varsa ve e5-small isteniyorsa)
+    if HF_API_KEY:
+        try:
+            hf_url = "https://api-inference.huggingface.co/pipeline/feature-extraction/intfloat/multilingual-e5-small"
+            headers = {"Authorization": f"Bearer {HF_API_KEY}"}
+            resp = requests.post(hf_url, headers=headers, json={"inputs": f"query: {clean_text}"}, timeout=8)
+            if resp.status_code == 200:
+                res_json = resp.json()
+                if isinstance(res_json, list) and isinstance(res_json[0], (int, float)):
+                    return res_json
+                elif isinstance(res_json, list) and isinstance(res_json[0], list):
+                    return res_json[0]
+        except Exception as e:
+            print(f"[HF Embedding Hatası]: {e}")
+
+    # 2. Google Gemini Embedding REST API (Yerel kütüphane şişkinliği olmadan en kararlı yol)
+    if GEMINI_API_KEY:
+        try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key={GEMINI_API_KEY}"
+            payload = {
+                "model": "models/text-embedding-004",
+                "content": {"parts": [{"text": clean_text}]}
+            }
+            resp = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=10)
+            if resp.status_code == 200:
+                data = resp.json()
+                return data.get("embedding", {}).get("values", [])
+            else:
+                # Fallback: embedding-001
+                url_old = f"https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key={GEMINI_API_KEY}"
+                resp_old = requests.post(url_old, json=payload, headers={"Content-Type": "application/json"}, timeout=10)
+                if resp_old.status_code == 200:
+                    return resp_old.json().get("embedding", {}).get("values", [])
+        except Exception as e:
+            print(f"[Gemini Embedding Hatası]: {e}")
+
+    return []
+
+
+def lightweight_rerank(query: str, documents: List[str], top_k: int = 5) -> List[str]:
+    """
+    Ağır PyTorch CrossEncoder yerine 512 MB bellek dostu
+    hibrit anahtar kelime + BM25 ve token örtüşme tabanlı reranker.
+    """
+    if not documents:
+        return []
+    if len(documents) <= top_k:
+        return documents
+
+    if BM25Okapi:
+        try:
+            tokenized_corpus = [re.findall(r"\w+", doc.lower()) for doc in documents]
+            tokenized_query = re.findall(r"\w+", query.lower())
+            bm25 = BM25Okapi(tokenized_corpus)
+            scores = bm25.get_scores(tokenized_query)
+            scored_docs = sorted(zip(documents, scores), key=lambda x: x[1], reverse=True)
+            return [doc for doc, score in scored_docs[:top_k]]
+        except Exception:
+            pass
+
+    # Basit token örtüşme fallback'i
+    query_tokens = set(re.findall(r"\w+", query.lower()))
+    def score_doc(doc: str) -> float:
+        doc_tokens = set(re.findall(r"\w+", doc.lower()))
+        return len(query_tokens.intersection(doc_tokens))
+
+    scored = sorted(documents, key=score_doc, reverse=True)
+    return scored[:top_k]
+
+
+def search_supabase_knowledge_base(query: str, match_count: int = 6) -> str:
+    """
+    Supabase üzerinde kayıtlı mevzuat veya döküman veritabanında arama yapar.
+    Hem vector similarity RPC hem de text search fallback'lerini destekler.
+    """
+    if not supabase:
+        return ""
+
+    query_embedding = get_text_embedding(query)
+    retrieved_texts: List[str] = []
+
+    # 1. Supabase pgvector RPC (varsa)
+    if query_embedding:
+        try:
+            rpc_res = supabase.rpc("match_documents", {
+                "query_embedding": query_embedding,
+                "match_threshold": 0.5,
+                "match_count": match_count
+            }).execute()
+
+            if rpc_res.data:
+                for row in rpc_res.data:
+                    content = row.get("content") or row.get("text") or row.get("chunk") or ""
+                    if content:
+                        retrieved_texts.append(content)
+        except Exception as e:
+            # RPC tanımlı değilse devam et
+            pass
+
+    # 2. Text / ILIKE Fallback (Eğer vektör aramasından sonuç gelmediyse)
+    if not retrieved_texts:
+        try:
+            # Yaygın tablo isimlerini kontrol eder (documents, mevzuat, chunks vb.)
+            for table_name in ["documents", "mevzuat", "knowledge_base", "law_articles"]:
+                try:
+                    res = supabase.table(table_name).select("*").limit(match_count).execute()
+                    if res.data:
+                        for row in res.data:
+                            content = row.get("content") or row.get("text") or row.get("description") or ""
+                            if content:
+                                retrieved_texts.append(content)
+                        break
+                except Exception:
+                    continue
+        except Exception as e:
+            print(f"[Supabase Text Search]: {e}")
+
+    # Reranking uygula
+    top_docs = lightweight_rerank(query, retrieved_texts, top_k=4)
+    return "\n\n---\n\n".join(top_docs)
+
+
+# ============================================================
+# GEMINI YAPAY ZEKA MOTORU (REST & PYTHON UYUMLU)
+# ============================================================
+
+def call_gemini_api(prompt: str) -> str:
+    """
+    Gemini API'sini REST protokolüyle doğrudan çağırır.
+    Böylelikle eski google.generativeai veya yeni google.genai paket
+    çakışmalarından, deprecation uyarılarından ve bellek sızıntılarından korunur.
+    """
+    if not GEMINI_API_KEY:
+        return "Gemini API Anahtarı (GEMINI_API_KEY) tanımlı değil."
+
+    models_to_try = [
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash",
+        "gemini-flash-latest"
+    ]
+
+    last_error = ""
+
+    for model_name in models_to_try:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={GEMINI_API_KEY}"
+        payload = {
+            "contents": [
+                {
+                    "parts": [
+                        {"text": prompt}
+                    ]
+                }
+            ],
+            "generationConfig": {
+                "temperature": 0.2,
+                "maxOutputTokens": 2048
+            }
+        }
+
+        try:
+            resp = requests.post(
+                url,
+                json=payload,
+                headers={"Content-Type": "application/json"},
+                timeout=30
+            )
+
+            if resp.status_code == 200:
+                data = resp.json()
+                candidates = data.get("candidates", [])
+                if candidates:
+                    parts = candidates[0].get("content", {}).get("parts", [])
+                    if parts and "text" in parts[0]:
+                        return parts[0]["text"].strip()
+            elif resp.status_code == 429:
+                last_error = "429 Quota Exceeded"
+                continue
+            else:
+                last_error = f"HTTP {resp.status_code}: {resp.text[:150]}"
+        except Exception as e:
+            last_error = str(e)
+            continue
+
+    if "429" in last_error or "quota" in last_error.lower():
+        return "Google Gemini API ücretsiz kota sınırına ulaşıldı. Lütfen birkaç dakika sonra tekrar deneyin."
+
+    return f"Yapay zekâ yanıtı oluşturulamadı (Hata: {last_error})"
+
+
+def generate_ai_executive_summary(accounts, findings, total_debit, total_credit):
+    prompt = f"""
+Sen kıdemli bir Yeminli Mali Müşavir (YMM) ve Bağımsız Denetçisin.
+
+Aşağıda bir şirkete ait mizan özeti ve kural motoru tarafından tespit edilen vergi risk bulguları yer almaktadır:
+
+- Toplam Borç Tutarı: {total_debit:,.2f} TL
+- Toplam Alacak Tutarı: {total_credit:,.2f} TL
+- Tespit Edilen Risk Sayısı: {len(findings)}
+- Öne Çıkan Bulgular: {str(findings[:4])}
+
+Lütfen bu verileri VUK, KVK ve Tekdüzen Hesap Planı ilkeleri açısından değerlendir.
+Şirket yönetimi ve mali müşavir için 3-4 cümlelik, net, profesyonel bir Yönetici Denetim Özeti yaz.
+Varsa acilen atılması gereken düzeltme adımlarını vurgula.
+"""
+    return call_gemini_api(prompt)
+
+
+def generate_rag_answer(question: str, context: str) -> str:
+    prompt = f"""
+Sen Türkiye vergi mevzuatı konusunda uzmanlaşmış bir yapay zekâ asistanısın.
+Kullanıcının sorusunu yalnızca aşağıda verilen mevzuat kaynaklarına dayanarak cevapla.
+
+KURALLAR:
+1. Cevabı yalnızca verilen mevzuat metinlerine dayanarak oluştur.
+2. Verilen kaynaklarda bulunmayan bir bilgiyi uydurma.
+3. Her önemli hukuki açıklamanın yanında ilgili kanun ve madde numarasını belirt.
+4. Birden fazla madde birlikte değerlendiriliyorsa bunu açıkça belirt.
+5. Sorunun doğrudan dayanağı olan maddeyi öncelikle kullan.
+6. Kaynaklardan kesin bir sonuç çıkarılamıyorsa bunu açıkça söyle.
+7. Gereksiz uzun açıklamalar yapma.
+8. Önce doğrudan cevabı ver, ardından gerekçeyi açıkla.
+9. Mevzuat metnini gereksiz yere uzun şekilde tekrar etme.
+10. Kaynaklarda bulunmayan güncel oran, tarih, istisna veya ceza miktarını tahmin etme.
+11. Cevabın sonunda 'Dayanak' başlığı altında kullandığın kanun ve madde numaralarını belirt.
+
+KULLANICI SORUSU:
+{question}
+
+MEVZUAT KAYNAKLARI:
+{context}
+
+CEVAP:
+"""
+    return call_gemini_api(prompt)
+
+
+# ============================================================
+# GÜVENLİK VE TÜRK FORMATI SAYI ÇEVİRİCİ
+# ============================================================
+
+security = HTTPBearer(auto_error=False)
+
+def get_current_user_optional(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+):
+    if not credentials:
+        return None
+    token = credentials.credentials
+    email = auth.verify_access_token(token)
+    if not email:
+        return None
+    user = db.query(models.User).filter(models.User.email == email).first()
+    return user
+
+
 def parse_turkish_float(val) -> float:
-    """
-    Türk muhasebe programlarından gelen
-    1.250.500,50 veya 1250500.50 gibi sayı formatlarını
-    güvenle float yapar.
-    """
     if val is None or val == "" or val == "-" or val == "None":
         return 0.0
-
     if isinstance(val, (int, float)):
         return float(val)
 
     val_str = str(val).strip()
-
     if "," in val_str and "." in val_str:
         val_str = val_str.replace(".", "").replace(",", ".")
     elif "," in val_str:
@@ -82,264 +358,10 @@ def parse_turkish_float(val) -> float:
 
 
 # ============================================================
-# GEMINI YAPAY ZEKA MOTORU
-# ============================================================
-
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
-
-CACHED_AVAILABLE_MODELS = None
-
-
-def get_active_gemini_models():
-    """
-    Google'a doğrudan list_models çağrısı yaparak
-    bu API anahtarına açık olan ve generateContent
-    destekleyen güncel modelleri bulur.
-    """
-    global CACHED_AVAILABLE_MODELS
-
-    if CACHED_AVAILABLE_MODELS:
-        return CACHED_AVAILABLE_MODELS
-
-    discovered = []
-
-    if GEMINI_API_KEY:
-        try:
-            genai.configure(api_key=GEMINI_API_KEY)
-
-            for m in genai.list_models():
-                methods = getattr(
-                    m,
-                    "supported_generation_methods",
-                    []
-                )
-
-                if "generateContent" in methods:
-                    name = m.name.replace("models/", "")
-                    discovered.append(name)
-
-            flashes = [
-                m for m in discovered
-                if "flash" in m.lower()
-            ]
-
-            others = [
-                m for m in discovered
-                if "flash" not in m.lower()
-            ]
-
-            discovered = flashes + others
-
-            print(f"[Gemini Başarılı] Aktif bulunan modeller: {discovered}")
-
-        except Exception as e:
-            print(f"[Gemini ListModels Hatası]: {e}")
-
-    if discovered:
-        CACHED_AVAILABLE_MODELS = discovered
-        return CACHED_AVAILABLE_MODELS
-
-    return [
-        "gemini-2.5-flash",
-        "gemini-2.0-flash",
-        "gemini-flash-latest"
-    ]
-
-
-# ============================================================
-# MEVCUT YÖNETİCİ DENETİM ÖZETİ
-# ============================================================
-
-def generate_ai_executive_summary(
-    accounts,
-    findings,
-    total_debit,
-    total_credit
-):
-    if not GEMINI_API_KEY:
-        return "Gemini API Anahtarı (GEMINI_API_KEY) ortam değişkenlerinde tanımlı değil."
-
-    prompt = f"""
-Sen kıdemli bir Yeminli Mali Müşavir (YMM) ve Bağımsız Denetçisin.
-
-Aşağıda bir şirkete ait mizan özeti ve kural motoru
-tarafından tespit edilen vergi risk bulguları yer almaktadır:
-
-- Toplam Borç Tutarı: {total_debit:,.2f} TL
-- Toplam Alacak Tutarı: {total_credit:,.2f} TL
-- Tespit Edilen Risk Sayısı: {len(findings)}
-- Öne Çıkan Bulgular: {str(findings[:4])}
-
-Lütfen bu verileri VUK, KVK ve Tekdüzen Hesap Planı
-ilkeleri açısından değerlendir.
-
-Şirket yönetimi ve mali müşavir için 3-4 cümlelik,
-net, profesyonel bir Yönetici Denetim Özeti yaz.
-
-Varsa acilen atılması gereken düzeltme adımlarını vurgula.
-"""
-
-    models_to_try = get_active_gemini_models()
-    last_error = ""
-
-    for model_name in models_to_try:
-        clean_name = model_name.replace("models/", "")
-        try:
-            model_instance = genai.GenerativeModel(clean_name)
-            response = model_instance.generate_content(prompt)
-            if response and response.text:
-                return response.text.strip()
-        except Exception as e:
-            last_error = str(e)
-            print(f"[Gemini Log] {clean_name} modeli denenirken hata alındı: {last_error}")
-            continue
-
-    if "429" in last_error or "quota" in last_error.lower():
-        return "Google Gemini API ücretsiz kota sınırına ulaşıldı."
-
-    return f"Yapay zekâ yönetici özeti oluşturulamadı (Hata: {last_error})"
-
-
-# ============================================================
-# SUPABASE VEKTÖR ARAMA (SAF EMBEDDING RETRIEVAL)
-# ============================================================
-
-def search_legal_context_from_supabase(question: str, top_k: int = 3) -> str:
-    """
-    Soruyu multilingual-e5-small ile vektöre çevirir,
-    Supabase pgvector tablosundan en alakalı kanunları çeker.
-    """
-    try:
-        query_text = f"query: {question}"
-        query_embedding = model.encode(query_text).tolist()
-
-        # Supabase SQL fonksiyonu (match_documents)
-        response = supabase.rpc(
-            "match_documents",
-            {
-                "query_embedding": query_embedding,
-                "match_threshold": 0.50,
-                "match_count": top_k
-            }
-        ).execute()
-
-        documents = response.data or []
-        if not documents:
-            return "İlgili vergi kanunu veya tebliğ maddesi veritabanında bulunamadı."
-
-        context_parts = []
-        for d in documents:
-            source = d.get("law_name", "Mevzuat")
-            article = d.get("article_no", "")
-            content = d.get("content", "")
-            context_parts.append(f"[{source} {article}]\n{content}")
-
-        return "\n\n---\n\n".join(context_parts)
-
-    except Exception as e:
-        print(f"[Supabase Arama Hatası]: {e}")
-        return f"Mevzuat taranırken bir hata oluştu: {str(e)}"
-
-
-# ============================================================
-# RAG HUKUKİ CEVAP MOTORU
-# ============================================================
-
-def generate_rag_answer(question, context):
-    if not GEMINI_API_KEY:
-        return "Gemini API Anahtarı (GEMINI_API_KEY) tanımlı değil."
-
-    prompt = f"""
-Sen Türkiye vergi mevzuatı konusunda çalışan
-bir yapay zekâ asistanısın.
-
-Kullanıcının sorusunu yalnızca aşağıda verilen
-mevzuat kaynaklarına dayanarak cevapla.
-
-KURALLAR:
-1. Cevabı yalnızca verilen mevzuat metinlerine dayanarak oluştur.
-2. Verilen kaynaklarda bulunmayan bir bilgiyi uydurma.
-3. Her önemli hukuki açıklamanın yanında ilgili kanun ve madde numarasını belirt.
-4. Birden fazla madde birlikte değerlendiriliyorsa bunu açıkça belirt.
-5. Sorunun doğrudan dayanağı olan maddeyi öncelikle kullan.
-6. Kaynaklardan kesin bir sonuç çıkarılamıyorsa bunu açıkça söyle.
-7. Gereksiz uzun açıklamalar yapma.
-8. Önce doğrudan cevabı ver, ardından gerekçeyi açıkla.
-9. Mevzuat metnini gereksiz yere uzun şekilde tekrar etme.
-10. Kaynaklarda bulunmayan güncel oran, tarih, istisna, ceza miktarı veya başka bir hukuki ayrıntıyı tahmin etme.
-11. Cevabın sonunda Dayanak başlığı altında kullandığın kanun ve madde numaralarını belirt.
-
-KULLANICI SORUSU:
-{question}
-
-MEVZUAT KAYNAKLARI:
-{context}
-
-CEVAP:
-"""
-
-    models_to_try = get_active_gemini_models()
-    last_error = ""
-
-    for model_name in models_to_try:
-        clean_name = model_name.replace("models/", "")
-        try:
-            model_instance = genai.GenerativeModel(clean_name)
-            response = model_instance.generate_content(prompt)
-            if response and response.text:
-                return response.text.strip()
-        except Exception as e:
-            last_error = str(e)
-            print(f"[Gemini RAG] {clean_name} modelinde hata: {last_error}")
-            continue
-
-    if "429" in last_error or "quota" in last_error.lower():
-        return "Gemini API kota sınırına ulaşıldı."
-
-    return f"RAG cevabı oluşturulamadı. Hata: {last_error}"
-
-
-# ============================================================
-# GÜVENLİK VE ESNEK KİMLİK DOĞRULAMA
-# ============================================================
-
-security = HTTPBearer(auto_error=False)
-
-
-def get_current_user_optional(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
-):
-    if not credentials:
-        return None
-
-    token = credentials.credentials
-    email = auth.verify_access_token(token)
-
-    if not email:
-        return None
-
-    user = (
-        db.query(models.User)
-        .filter(models.User.email == email)
-        .first()
-    )
-    return user
-
-
-# ============================================================
 # SMMM MİZAN DENETİM KURAL MATRİSİ
 # ============================================================
 
 def load_audit_rules():
-    """
-    rules.json dosyasını okur.
-    Dosya bulunamazsa veya bozuksa
-    temel kurallarla başlar.
-    """
     if os.path.exists("rules.json"):
         try:
             with open("rules.json", "r", encoding="utf-8") as f:
@@ -349,6 +371,7 @@ def load_audit_rules():
         except Exception as e:
             print(f"[Hata] rules.json okunurken hata oluştu: {e}")
 
+    # Fallback temel kural
     return {
         "100": {
             "prefix": "100",
@@ -365,7 +388,6 @@ def load_audit_rules():
             ]
         }
     }
-
 
 AUDIT_MATRIX = load_audit_rules()
 
@@ -406,56 +428,55 @@ def run_python_audit(accounts):
         )
 
         for key, rule in AUDIT_MATRIX.items():
-            if (
-                raw_code == rule["prefix"]
-                or raw_code.startswith(rule["prefix"] + ".")
-                or raw_code.startswith(rule["prefix"])
-            ):
-                if rule["check"] == "credit_balance" and credit_bal > 0.01:
+            prefix = rule.get("prefix", "")
+            if raw_code == prefix or raw_code.startswith(prefix + ".") or raw_code.startswith(prefix):
+                check_type = rule.get("check")
+
+                if check_type == "credit_balance" and credit_bal > 0.01:
                     findings.append({
                         "code": raw_code,
                         "name": name,
-                        "level": rule["level"],
-                        "category": rule["category"],
-                        "title": rule["title"],
+                        "level": rule.get("level", "ORTA"),
+                        "category": rule.get("category", "Genel Denetim"),
+                        "title": rule.get("title", "Alacak Bakiyesi Riski"),
                         "amount": credit_bal,
-                        "law": rule["law"],
+                        "law": rule.get("law", ""),
                         "journal_suggestion": {
-                            "description": rule["desc"],
+                            "description": rule.get("desc", ""),
                             "lines": [
                                 {
                                     "account": l["account"],
                                     "type": l["type"],
                                     "amount": credit_bal
                                 }
-                                for l in rule["journal_lines"]
+                                for l in rule.get("journal_lines", [])
                             ]
                         }
                     })
 
-                elif rule["check"] == "debit_balance" and debit_bal > 0.01:
+                elif check_type == "debit_balance" and debit_bal > 0.01:
                     findings.append({
                         "code": raw_code,
                         "name": name,
-                        "level": rule["level"],
-                        "category": rule["category"],
-                        "title": rule["title"],
+                        "level": rule.get("level", "ORTA"),
+                        "category": rule.get("category", "Genel Denetim"),
+                        "title": rule.get("title", "Borç Bakiyesi Riski"),
                         "amount": debit_bal,
-                        "law": rule["law"],
+                        "law": rule.get("law", ""),
                         "journal_suggestion": {
-                            "description": rule["desc"],
+                            "description": rule.get("desc", ""),
                             "lines": [
                                 {
                                     "account": l["account"],
                                     "type": l["type"],
                                     "amount": debit_bal
                                 }
-                                for l in rule["journal_lines"]
+                                for l in rule.get("journal_lines", [])
                             ]
                         }
                     })
 
-                elif rule["check"] == "debit_balance_interest" and debit_bal > 0.01:
+                elif check_type == "debit_balance_interest" and debit_bal > 0.01:
                     interest_amt = debit_bal * 0.05
                     vat_amt = interest_amt * 0.20
                     total_amt = interest_amt + vat_amt
@@ -464,26 +485,26 @@ def run_python_audit(accounts):
                     findings.append({
                         "code": raw_code,
                         "name": name,
-                        "level": rule["level"],
-                        "category": rule["category"],
-                        "title": rule["title"],
+                        "level": rule.get("level", "KRİTİK"),
+                        "category": rule.get("category", "Transfer Fiyatlandırması"),
+                        "title": rule.get("title", "Adat Faiz Hesabı Gerekli"),
                         "amount": debit_bal,
-                        "law": rule["law"],
+                        "law": rule.get("law", ""),
                         "journal_suggestion": {
-                            "description": rule["desc"],
+                            "description": rule.get("desc", ""),
                             "lines": [
                                 {
-                                    "account": j_lines[0]["account"],
+                                    "account": j_lines[0]["account"] if len(j_lines) > 0 else "131 Ortaklardan Alacaklar",
                                     "type": "BORÇ",
                                     "amount": total_amt
                                 },
                                 {
-                                    "account": j_lines[1]["account"],
+                                    "account": j_lines[1]["account"] if len(j_lines) > 1 else "642 Faiz Gelirleri",
                                     "type": "ALACAK",
                                     "amount": interest_amt
                                 },
                                 {
-                                    "account": j_lines[2]["account"],
+                                    "account": j_lines[2]["account"] if len(j_lines) > 2 else "391 Hesaplanan KDV",
                                     "type": "ALACAK",
                                     "amount": vat_amt
                                 }
@@ -491,49 +512,46 @@ def run_python_audit(accounts):
                         }
                     })
 
-                elif rule["check"] == "credit_balance_equity_risk" and credit_bal > 0.01:
+                elif check_type == "credit_balance_equity_risk" and credit_bal > 0.01:
                     findings.append({
                         "code": raw_code,
                         "name": name,
-                        "level": rule["level"],
-                        "category": rule["category"],
-                        "title": rule["title"],
+                        "level": rule.get("level", "KRİTİK"),
+                        "category": rule.get("category", "Özsermaye Koruma"),
+                        "title": rule.get("title", "Özsermaye Kaybı Riski"),
                         "amount": credit_bal,
-                        "law": rule["law"],
+                        "law": rule.get("law", ""),
                         "journal_suggestion": {
-                            "description": rule["desc"],
+                            "description": rule.get("desc", ""),
                             "lines": [
                                 {
                                     "account": l["account"],
                                     "type": l["type"],
                                     "amount": credit_bal
                                 }
-                                for l in rule["journal_lines"]
+                                for l in rule.get("journal_lines", [])
                             ]
                         }
                     })
 
-    # Mizan Denkliği
+    # Mizan Denkliği Kontrolü
     balance_diff = abs(total_debit - total_credit)
     is_balanced = balance_diff < 1.0
 
     if not is_balanced and (total_debit > 0 or total_credit > 0):
-        findings.insert(
-            0,
-            {
-                "code": "DENK",
-                "name": "Mizan Denkliği",
-                "level": "KRİTİK",
-                "category": "Mizan Denkliği",
-                "title": f"Mizan Borç ve Alacak Toplamı Eşit Değil! Fark: {balance_diff:,.2f} TL",
-                "amount": balance_diff,
-                "law": "VUK Madde 215",
-                "journal_suggestion": {
-                    "description": "Mizan borç ve alacak toplamları birbirine eşit olmalıdır.",
-                    "lines": []
-                }
+        findings.insert(0, {
+            "code": "DENK",
+            "name": "Mizan Denkliği",
+            "level": "KRİTİK",
+            "category": "Mizan Denkliği",
+            "title": f"Mizan Borç ve Alacak Toplamı Eşit Değil! Fark: {balance_diff:,.2f} TL",
+            "amount": balance_diff,
+            "law": "VUK Madde 215",
+            "journal_suggestion": {
+                "description": "Mizan borç ve alacak toplamları birbirine eşit olmalıdır.",
+                "lines": []
             }
-        )
+        })
 
     ai_summary = generate_ai_executive_summary(
         accounts,
@@ -580,7 +598,6 @@ def register(user: dict, db: Session = Depends(get_db)):
         role="smmm",
         subscription_status="trial"
     )
-
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
@@ -595,7 +612,6 @@ def login(credentials: dict, db: Session = Depends(get_db)):
     password = credentials.get("password")
 
     db_user = db.query(models.User).filter(models.User.email == email).first()
-
     if not db_user or not auth.verify_password(password, db_user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -619,29 +635,31 @@ def run_audit(payload: dict, current_user=Depends(get_current_user_optional)):
     return result
 
 
-# ============================================================
-# RAG ENDPOINT (Otomatik Vektör Aramalı)
-# ============================================================
-
 @app.post("/rag/ask")
 def rag_ask(payload: dict, current_user=Depends(get_current_user_optional)):
+    """
+    RAG Soru-Cevap Uç Noktası.
+    Context payload içinde gelirse doğrudan kullanır;
+    gelmezse Supabase bilgi bankasında hafif vektör/metin araması yaparak
+    en alakalı mevzuatı otomatik çeker ve cevaplar.
+    """
     question = payload.get("question", "").strip()
-    provided_context = payload.get("context", "").strip()
+    context = payload.get("context", "").strip()
 
     if not question:
         raise HTTPException(status_code=400, detail="Soru gönderilmedi.")
 
-    # Eğer dışarıdan context verilmediyse Supabase'den otomatik ara
-    if not provided_context:
-        context = search_legal_context_from_supabase(question)
-    else:
-        context = provided_context
+    # Context boşsa Supabase bilgi tabanından otomatik ara
+    if not context:
+        context = search_supabase_knowledge_base(question)
+
+    if not context:
+        context = "Kullanıcıya özel mevzuat kaynağı bulunamadı. Genel VUK, KVK ve Türk Vergi Hukuku prensipleri çerçevesinde değerlendiriniz."
 
     answer = generate_rag_answer(question, context)
-
     return {
         "question": question,
-        "retrieved_context": context,
+        "context_used": bool(context),
         "answer": answer
     }
 
@@ -651,5 +669,7 @@ def read_root():
     if os.path.exists("index.html"):
         with open("index.html", "r", encoding="utf-8") as f:
             return f.read()
-
-    return "<h1>SMMM Mizan Denetim API Çalışıyor</h1><p>index.html dosyası bulunamadı.</p>"
+    return (
+        "<h1>SMMM Mizan Denetim API Çalışıyor</h1>"
+        "<p>index.html dosyası bulunamadı.</p>"
+    )

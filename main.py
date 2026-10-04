@@ -10,7 +10,7 @@ import re
 import math
 
 from supabase import create_client
-from sentence_transformers import SentenceTransformer, CrossEncoder
+from sentence_transformers import SentenceTransformer
 from rank_bm25 import BM25Okapi
 # ============================================================
 # V10 RAG ENGINE
@@ -33,7 +33,6 @@ supabase = create_client(
 model = SentenceTransformer(
     "intfloat/multilingual-e5-small"
 )
-
 # V10 reranker
 reranker = CrossEncoder(
     "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1"

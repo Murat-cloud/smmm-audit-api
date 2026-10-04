@@ -12,6 +12,32 @@ import math
 from supabase import create_client
 from sentence_transformers import SentenceTransformer, CrossEncoder
 from rank_bm25 import BM25Okapi
+# ============================================================
+# V10 RAG ENGINE
+# ============================================================
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise RuntimeError(
+        "SUPABASE_URL veya SUPABASE_KEY environment variable eksik."
+    )
+
+supabase = create_client(
+    SUPABASE_URL,
+    SUPABASE_KEY
+)
+
+# V10 embedding modeli
+model = SentenceTransformer(
+    "intfloat/multilingual-e5-small"
+)
+
+# V10 reranker
+reranker = CrossEncoder(
+    "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1"
+)
 
 from database import engine, Base, get_db
 import models, schemas, auth

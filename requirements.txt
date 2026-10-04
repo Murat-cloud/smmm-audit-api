@@ -8,6 +8,7 @@ python-jose[cryptography]
 python-multipart
 email-validator
 google-generativeai
+torch==2.10.0+cpu
 sentence-transformers==3.3.1
 rank-bm25
 supabase

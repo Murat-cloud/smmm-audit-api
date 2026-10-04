@@ -1079,7 +1079,6 @@ def read_root():
         "<p>index.html dosyası bulunamadı.</p>"
     )
 ```
-
 
 **Bir kritik düzeltme:** Yukarıdaki kodu verirken mevcut `/login` içindeki `new_user.email` satırını yanlışlıkla korumamak gerekiyor. Senin gönderdiğin orijinal kodda da burada hata var: `new_user` tanımlı değil. Doğrusu `db_user.email` olmalı. Bu yüzden **yukarıdaki kodda `/login` bölümünü şu şekilde kullan:**
 

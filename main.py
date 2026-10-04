@@ -1,8 +1,16 @@
+"""
+SMMM Mizan Denetim & Vergi Mevzuatı V10 RAG SaaS API
+- V10 Hukuk Motoru: BM25 + Semantic Search + Exact Legal Phrase + Intent/Law Bonus
+- Supabase 'tax_documents' (384-dim) & 'match_tax_documents' RPC Entegrasyonu
+- 512 MB Render RAM Uyumlu (Sıfır PyTorch/Transformers şişkinliği)
+- REST Tabanlı Gemini Yapay Zekâ Motoru
+"""
+
 import os
 import re
 import math
 import json
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,23 +22,25 @@ import requests
 # Supabase Client
 from supabase import create_client, Client
 
-# Hafif BM25 (PyTorch gerektirmez, bellek dostudur)
+# Hafif BM25 Motoru (Bellek dostu saf Python kütüphanesi)
 try:
     from rank_bm25 import BM25Okapi
 except ImportError:
     BM25Okapi = None
 
-# Veritabanı ve Auth modülleri
+# Veritabanı ve Güvenlik Modülleri
 from database import engine, Base, get_db
 import models, schemas, auth
 
+
 # ============================================================
-# FASTAPI UYGULAMA VE CORS AYARLARI
+# FASTAPI UYGULAMA VE EVRENSEL CORS AYARLARI
 # ============================================================
 
 app = FastAPI(
-    title="SMMM Mizan Denetim SaaS API",
-    version="4.2.1"
+    title="SMMM Mizan Denetim & V10 RAG SaaS API",
+    version="10.0.0",
+    description="SMMM Mizan Denetim ve Türk Vergi Mevzuatı V10 RAG Arama Motoru"
 )
 
 app.add_middleware(
@@ -41,49 +51,48 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Tabloları oluştur
+# SQLAlchemy Tablolarını Oluştur
 Base.metadata.create_all(bind=engine)
 
+
 # ============================================================
-# ORTAM DEĞİŞKENLERİ VE KONFİGÜRASYON
+# ORTAM DEĞİŞKENLERİ VE SUPABASE BAĞLANTISI
 # ============================================================
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-HF_API_KEY = os.getenv("HF_API_KEY", "")  # Hugging Face Inference API Token (Opsiyonel)
+HF_API_KEY = os.getenv("HF_API_KEY", "")
 
-# Supabase vector sütun boyutunuz (Varsayılan 384 - e5-small ile tam uyumlu)
-# Eğer Supabase'de vector(768) kullandıysanız Render ortam değişkenine VECTOR_DIM=768 yazabilirsiniz.
+# Supabase vector(384) uyumu
 VECTOR_DIM = int(os.getenv("VECTOR_DIM", "384"))
 
 supabase: Optional[Client] = None
 if SUPABASE_URL and SUPABASE_KEY:
     try:
         supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-        print("[Supabase] Bağlantı başarılı.")
+        print("[Supabase] Bağlantı başarıyla kuruldu.")
     except Exception as e:
         print(f"[Supabase Bağlantı Hatası]: {e}")
 else:
-    print("[Uyarı] SUPABASE_URL veya SUPABASE_KEY tanımlı değil.")
+    print("[Uyarı] SUPABASE_URL veya SUPABASE_KEY tanımlı değil!")
 
 
 # ============================================================
-# 512 MB BELLEK DOSTU EMBEDDING & HİBRİT RERANK MOTORU
+# 512 MB BELLEK DOSTU 384 BOYUTLU EMBEDDING MOTORU
 # ============================================================
 
 def get_text_embedding(text: str, target_dim: int = VECTOR_DIM) -> List[float]:
     """
-    Metnin embedding vektörünü alır.
-    Supabase'deki vector(384) veya vector(768) boyutuna tam uyması için
-    target_dim parametresini dinamik yönetir.
-    RAM Tüketimi: 0 MB (Dış REST API üzerinden).
+    Kullanıcı sorusunun embedding vektörünü üretir.
+    Supabase'deki 'tax_documents' tablosunun vector(384) sütununa tam uyum sağlar.
+    RAM Tüketimi: 0 MB (Dış API çağrısı, yerel model yüklemez).
     """
     clean_text = text.strip().replace("\n", " ")
     if not clean_text:
         return [0.0] * target_dim
 
-    # 1. Seçenek: HuggingFace Serverless API (intfloat/multilingual-e5-small -> 384 Boyut)
+    # 1. HuggingFace Serverless Inference (multilingual-e5-small)
     if HF_API_KEY:
         try:
             hf_url = "https://api-inference.huggingface.co/pipeline/feature-extraction/intfloat/multilingual-e5-small"
@@ -102,18 +111,16 @@ def get_text_embedding(text: str, target_dim: int = VECTOR_DIM) -> List[float]:
                     elif isinstance(res_json[0], list):
                         return res_json[0][:target_dim]
         except Exception as e:
-            print(f"[HF Inference API]: {e}")
+            print(f"[HF Embedding]: {e}")
 
-    # 2. Seçenek: Google Gemini text-embedding-004 REST API
-    # Gemini text-embedding-004 modeli 'outputDimensionality' desteği sayesinde
-    # doğrudan 384 veya 768 boyutlu çıktı verebilir!
+    # 2. Google Gemini text-embedding-004 REST API (MRL outputDimensionality: 384 desteği)
     if GEMINI_API_KEY:
         try:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key={GEMINI_API_KEY}"
             payload = {
                 "model": "models/text-embedding-004",
                 "content": {"parts": [{"text": clean_text}]},
-                "outputDimensionality": target_dim  # 384 vs 768 uyuşmazlığını çözen kilit parametre!
+                "outputDimensionality": target_dim
             }
             resp = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=10)
             if resp.status_code == 200:
@@ -121,118 +128,241 @@ def get_text_embedding(text: str, target_dim: int = VECTOR_DIM) -> List[float]:
                 if values:
                     return values
             else:
-                # outputDimensionality parametresini desteklemeyen eski endpoint için fallback
-                payload_fallback = {
+                # Standart çağrı fallback
+                payload_fb = {
                     "model": "models/text-embedding-004",
                     "content": {"parts": [{"text": clean_text}]}
                 }
-                resp_fb = requests.post(url, json=payload_fallback, headers={"Content-Type": "application/json"}, timeout=10)
+                resp_fb = requests.post(url, json=payload_fb, headers={"Content-Type": "application/json"}, timeout=10)
                 if resp_fb.status_code == 200:
                     values = resp_fb.json().get("embedding", {}).get("values", [])
                     return values[:target_dim] if values else []
         except Exception as e:
-            print(f"[Gemini Embedding API]: {e}")
+            print(f"[Gemini Embedding]: {e}")
 
     return []
 
 
-def lightweight_rerank(query: str, documents: List[str], top_k: int = 5) -> List[str]:
+# ============================================================
+# COLAB V10 RAG ÇEKİRDEĞİ: HUKUKİ NİYET & SKORLAMA MOTORU
+# ============================================================
+
+LAW_KEYWORDS = {
+    "VUK": ["vergi usul", "vuk", "fatura", "defter", "zamanaşımı", "ceza", "yoklama", "tebligat", "değerleme", "amortisman"],
+    "KVK": ["kurumlar vergisi", "kvk", "örtülü sermaye", "transfer fiyatlandırması", "iştirak kazancı", "kanunen kabul edilmeyen"],
+    "KDVK": ["katma değer", "kdv", "kdvk", "indirim", "istisna", "tevkifat", "ihraç kayıtlı", "teslim"],
+    "GVK": ["gelir vergisi", "gvk", "ücret", "serbest meslek", "kira geliri", "ticari kazanç", "istisna", "beyanname"],
+    "AATUHK": ["amme alacakları", "6183", "haciz", "gecikme zammı", "tecil", "ödeme emri", "ihtiyati tahakkuk"],
+    "TTK": ["türk ticaret", "ttk", "genel kurul", "sermaye", "esas sözleşme", "denetim", "limited", "anonim"]
+}
+
+
+def detect_law_context(query: str) -> Dict[str, float]:
+    """Soru içerisindeki kanun bağlamını tespit eder."""
+    q_lower = query.lower()
+    scores = {}
+    for law, keywords in LAW_KEYWORDS.items():
+        score = sum(1.5 if kw in q_lower else 0.0 for kw in keywords)
+        if law.lower() in q_lower:
+            score += 3.0
+        scores[law] = score
+    return scores
+
+
+def extract_phrases(text: str) -> List[str]:
+    """Hukuki anahtar terimleri ve cümle parçacıklarını çıkarır."""
+    words = re.findall(r"\w+", text.lower())
+    phrases = []
+    for i in range(len(words) - 1):
+        phrases.append(f"{words[i]} {words[i+1]}")
+    if len(words) >= 3:
+        for i in range(len(words) - 2):
+            phrases.append(f"{words[i]} {words[i+1]} {words[i+2]}")
+    return phrases
+
+
+def exact_phrase_score(query: str, doc_text: str) -> float:
+    """Tam hukuki tabirlerin döküman içerisindeki geçiş sıklığını puanlar."""
+    phrases = extract_phrases(query)
+    if not phrases:
+        return 0.0
+    doc_lower = doc_text.lower()
+    matches = sum(1.0 for p in phrases if p in doc_lower)
+    return min(matches / max(len(phrases), 1), 1.0)
+
+
+def legal_intent_bonus(query: str, doc_text: str) -> float:
+    """Soru kökü (nedir, süresi, oranı, istisnası) ile döküman eşleşme bonusu."""
+    q = query.lower()
+    d = doc_text.lower()
+    bonus = 0.0
+
+    if "zamanaşımı" in q and ("zamanaşımı" in d or "tarh zamanaşımı" in d or "tahsil zamanaşımı" in d):
+        bonus += 0.25
+    if ("ceza" in q or "usulsüzlük" in q) and ("ceza" in d or "usulsüzlük" in d or "vergi ziyaı" in d):
+        bonus += 0.20
+    if ("oran" in q or "kaçtır" in q or "yüzde" in q) and ("oran" in d or "%" in d):
+        bonus += 0.15
+    if "istisna" in q and "istisna" in d:
+        bonus += 0.20
+    if ("örtülü sermaye" in q or "331" in q) and ("örtülü sermaye" in d or "özkaynak" in d):
+        bonus += 0.30
+    if ("adat" in q or "faiz" in q) and ("faiz" in d or "adat" in d or "transfer fiyatlandırması" in d):
+        bonus += 0.25
+
+    return bonus
+
+
+def calculate_v10_score(
+    semantic_sim: float,
+    bm25_score: float,
+    query: str,
+    doc: Dict[str, Any]
+) -> float:
     """
-    Ağır PyTorch CrossEncoder yerine 512 MB bellek dostu
-    hibrit BM25 ve token örtüşme tabanlı reranker.
+    Colab'da geliştirilen V10 Final Sıralama Formülü.
+    Ağır CrossEncoder yerine anlık ve sıfır RAM ile en doğru hukuki maddeyi öne çıkarır.
     """
-    if not documents:
-        return []
-    if len(documents) <= top_k:
-        return documents
+    doc_content = doc.get("content") or doc.get("icerik") or doc.get("text") or ""
+    doc_law = (doc.get("law_name") or doc.get("kanun") or "").upper()
+    doc_title = doc.get("title") or doc.get("baslik") or ""
 
-    if BM25Okapi:
-        try:
-            tokenized_corpus = [re.findall(r"\w+", doc.lower()) for doc in documents]
-            tokenized_query = re.findall(r"\w+", query.lower())
-            bm25 = BM25Okapi(tokenized_corpus)
-            scores = bm25.get_scores(tokenized_query)
-            scored_docs = sorted(zip(documents, scores), key=lambda x: x[1], reverse=True)
-            return [doc for doc, score in scored_docs[:top_k]]
-        except Exception:
-            pass
+    # 1. Tam İfade Skoru (Exact Legal Phrase)
+    phrase_score = exact_phrase_score(query, doc_content)
 
-    # Token kesişimi fallback'i
-    query_tokens = set(re.findall(r"\w+", query.lower()))
-    def score_doc(doc: str) -> float:
-        doc_tokens = set(re.findall(r"\w+", doc.lower()))
-        return len(query_tokens.intersection(doc_tokens))
+    # 2. Hukuki Niyet Bonusu (Legal Intent)
+    intent_bonus = legal_intent_bonus(query, doc_content + " " + doc_title)
 
-    scored = sorted(documents, key=score_doc, reverse=True)
-    return scored[:top_k]
+    # 3. Kanun Bağlam Bonusu (Law Context Alignment)
+    law_contexts = detect_law_context(query)
+    law_bonus = 0.0
+    for law, weight in law_contexts.items():
+        if weight > 0 and (law in doc_law or law in doc_content[:150].upper()):
+            law_bonus += min(weight * 0.10, 0.35)
+
+    # 4. Madde Başlık Eşleşme Bonusu
+    title_bonus = 0.0
+    q_words = [w for w in re.findall(r"\w+", query.lower()) if len(w) > 3]
+    for w in q_words:
+        if w in doc_title.lower():
+            title_bonus += 0.10
+
+    # V10 Ağırlıklı Toplam Skor
+    final_score = (
+        (semantic_sim * 0.40) +
+        (bm25_score * 0.25) +
+        (phrase_score * 0.15) +
+        intent_bonus +
+        law_bonus +
+        title_bonus
+    )
+
+    return round(final_score, 4)
 
 
-def search_supabase_knowledge_base(query: str, match_count: int = 6) -> str:
+# ============================================================
+# SUPABASE V10 HİBRİT ARAMA (MATCH_TAX_DOCUMENTS + BM25)
+# ============================================================
+
+def retrieve_v10_mevzuat(query: str, top_k: int = 4) -> Tuple[str, List[Dict[str, Any]]]:
     """
-    Supabase üzerinde kayıtlı mevzuat veya döküman veritabanında arama yapar.
-    384/768 boyut hatasına karşı korumalıdır; hata olursa metin aramasına (ILIKE) düşer.
+    Colab V10 Pipeline'ının canlıya alınmış halidir:
+    1. 384-boyutlu embedding üretir.
+    2. Supabase match_tax_documents RPC'sini çağırır.
+    3. Sonuçları BM25 ve V10 skorlama fonksiyonuyla yeniden sıralar.
+    4. Gemini'ye verilecek zengin mevzuat context'ini oluşturur.
     """
     if not supabase:
-        return ""
+        return "", []
 
     query_embedding = get_text_embedding(query, target_dim=VECTOR_DIM)
-    retrieved_texts: List[str] = []
+    raw_candidates: List[Dict[str, Any]] = []
 
-    # 1. Supabase pgvector RPC Araması
+    # 1. Supabase 'match_tax_documents' RPC çağrısı
     if query_embedding:
         try:
-            rpc_res = supabase.rpc("match_documents", {
+            rpc_res = supabase.rpc("match_tax_documents", {
                 "query_embedding": query_embedding,
-                "match_threshold": 0.45,
-                "match_count": match_count
+                "match_threshold": 0.30,
+                "match_count": 15
             }).execute()
 
             if rpc_res.data:
                 for row in rpc_res.data:
-                    content = row.get("content") or row.get("text") or row.get("chunk") or ""
-                    if content:
-                        retrieved_texts.append(content)
+                    raw_candidates.append(row)
         except Exception as e:
-            # Boyut uyuşmazlığı ("different vector dimensions") veya RPC yoksa yakala
-            print(f"[Supabase RPC Uyarısı - Metin aramasına geçiliyor]: {e}")
+            print(f"[Supabase RPC Uyarısı - Standart tablo aramasına geçiliyor]: {e}")
 
-    # 2. Text / ILIKE Fallback Zinciri (Vektör aramasından sonuç dönmezse)
-    if not retrieved_texts:
+    # 2. RPC yoksa veya boş döndüyse 'tax_documents' tablosundan direkt çek
+    if not raw_candidates:
         try:
-            query_words = [w for w in re.findall(r"\w+", query) if len(w) > 3]
-            search_pattern = f"%{query_words[0]}%" if query_words else "%vergi%"
+            q_words = [w for w in re.findall(r"\w+", query) if len(w) > 3]
+            search_word = q_words[0] if q_words else "vergi"
 
-            for table_name in ["documents", "mevzuat", "knowledge_base", "law_articles"]:
-                try:
-                    res = supabase.table(table_name).select("*").ilike("content", search_pattern).limit(match_count).execute()
-                    if res.data:
-                        for row in res.data:
-                            content = row.get("content") or row.get("text") or row.get("description") or ""
-                            if content:
-                                retrieved_texts.append(content)
-                        if retrieved_texts:
-                            break
-                except Exception:
-                    continue
+            res = supabase.table("tax_documents").select("*").ilike("content", f"%{search_word}%").limit(15).execute()
+            if res.data:
+                for row in res.data:
+                    row["similarity"] = 0.50
+                    raw_candidates.append(row)
         except Exception as e:
-            print(f"[Supabase Metin Fallback]: {e}")
+            print(f"[Supabase Tablo Fallback]: {e}")
 
-    # Reranking ile en alakalı parçaları seç
-    top_docs = lightweight_rerank(query, retrieved_texts, top_k=4)
-    return "\n\n---\n\n".join(top_docs)
+    if not raw_candidates:
+        return "", []
+
+    # 3. BM25 Skorlarını Hesapla
+    corpus = [
+        re.findall(r"\w+", (c.get("content") or c.get("icerik") or "").lower())
+        for c in raw_candidates
+    ]
+    query_tokens = re.findall(r"\w+", query.lower())
+
+    bm25_scores = [0.0] * len(raw_candidates)
+    if BM25Okapi and corpus and any(len(doc) > 0 for doc in corpus):
+        try:
+            bm25 = BM25Okapi(corpus)
+            raw_bm25 = bm25.get_scores(query_tokens)
+            max_bm25 = max(raw_bm25) if len(raw_bm25) > 0 and max(raw_bm25) > 0 else 1.0
+            bm25_scores = [score / max_bm25 for score in raw_bm25]
+        except Exception:
+            pass
+
+    # 4. V10 Hibrit Skorlama ile Adayları Derecelendir
+    scored_candidates = []
+    for idx, cand in enumerate(raw_candidates):
+        sim = float(cand.get("similarity", 0.5))
+        bm25_val = bm25_scores[idx]
+        v10_score = calculate_v10_score(sim, bm25_val, query, cand)
+
+        cand["v10_score"] = v10_score
+        scored_candidates.append(cand)
+
+    scored_candidates.sort(key=lambda x: x["v10_score"], reverse=True)
+    selected_docs = scored_candidates[:top_k]
+
+    # 5. Gemini için Profesyonel Mevzuat Metni İnşa Et
+    formatted_context_list = []
+    for d in selected_docs:
+        law_name = d.get("law_name") or d.get("kanun") or "İlgili Mevzuat"
+        article_no = d.get("article_no") or d.get("madde") or "Belirtilmemiş"
+        title = d.get("title") or d.get("baslik") or ""
+        content = d.get("content") or d.get("icerik") or ""
+
+        section = f"KANUN: {law_name}\nMADDE: {article_no} - {title}\nİÇERİK:\n{content}"
+        formatted_context_list.append(section)
+
+    full_context = "\n\n========================================\n\n".join(formatted_context_list)
+    return full_context, selected_docs
 
 
 # ============================================================
-# GEMINI REST API ÇAĞRICISI
+# GEMINI REST API (DEPRECATION VE ŞİŞKİNLİK KORUMALI)
 # ============================================================
 
 def call_gemini_api(prompt: str) -> str:
-    """
-    Google GenAI SDK şişkinliği ve deprecation uyarıları olmaksızın
-    doğrudan REST API ile yanıt üretir.
-    """
+    """Google Gemini REST API ile doğrudan, hafif ve kararlı iletişim."""
     if not GEMINI_API_KEY:
-        return "Gemini API Anahtarı (GEMINI_API_KEY) tanımlı değil."
+        return "Gemini API Anahtarı (GEMINI_API_KEY) ortam değişkenlerinde tanımlı değil."
 
     models_to_try = [
         "gemini-2.5-flash",
@@ -242,19 +372,18 @@ def call_gemini_api(prompt: str) -> str:
     ]
 
     last_error = ""
-
     for model_name in models_to_try:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={GEMINI_API_KEY}"
         payload = {
             "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": {
-                "temperature": 0.2,
+                "temperature": 0.15,
                 "maxOutputTokens": 2048
             }
         }
 
         try:
-            resp = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=30)
+            resp = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=25)
             if resp.status_code == 200:
                 data = resp.json()
                 candidates = data.get("candidates", [])
@@ -263,7 +392,7 @@ def call_gemini_api(prompt: str) -> str:
                     if parts and "text" in parts[0]:
                         return parts[0]["text"].strip()
             elif resp.status_code == 429:
-                last_error = "429 Kota Sınırı"
+                last_error = "429 Ücretsiz Kota Sınırı"
                 continue
             else:
                 last_error = f"HTTP {resp.status_code}: {resp.text[:120]}"
@@ -272,58 +401,55 @@ def call_gemini_api(prompt: str) -> str:
             continue
 
     if "429" in last_error or "quota" in last_error.lower():
-        return "Google Gemini API ücretsiz kota sınırına ulaşıldı. Lütfen kısa süre sonra tekrar deneyin."
+        return "Google Gemini API ücretsiz kota sınırına ulaşıldı. Lütfen 1-2 dakika sonra tekrar deneyin."
 
     return f"Yapay zekâ yanıtı oluşturulamadı (Hata: {last_error})"
 
 
+def generate_rag_answer(question: str, context: str) -> str:
+    prompt = f"""
+Sen Türkiye vergi mevzuatı, VUK, KVK, GVK, KDVK ve Tekdüzen Hesap Planı konularında uzmanlaşmış kıdemli bir Yeminli Mali Müşavir (YMM) ve Hukuk Danışmanısın.
+
+Kullanıcının sorusunu YALNIZCA aşağıda verilen mevzuat kaynaklarına dayanarak cevapla.
+
+KURALLAR:
+1. Cevabı doğrudan verilen mevzuat maddelerine dayandır.
+2. Kaynaklarda açıkça yer almayan bir bilgiyi kesinlikle uydurma.
+3. Her önemli tespitin yanında ilgili Kanun ve Madde numarasını parantez içinde belirt (Örn: VUK Madde 374).
+4. Birden fazla madde birlikte değerlendiriliyorsa bunu açıkça ifade et.
+5. Gereksiz dolambaçlı cümleler kurma; önce doğrudan sonucu söyle, ardından hukuki gerekçesini açıkla.
+6. Kaynaklardan kesin bir sonuç çıkmıyorsa bunu açıkça belirt.
+7. Cevabın en sonunda mutlaka '### Dayanak' başlığı açarak kullandığın kanun ve madde numaralarını listele.
+
+KULLANICI SORUSU:
+{question}
+
+MEVZUAT KAYNAKLARI (V10 MOTORU İLE GETİRİLDİ):
+{context}
+
+YMM DEĞERLENDİRMESİ VE CEVAP:
+"""
+    return call_gemini_api(prompt)
+
+
 def generate_ai_executive_summary(accounts, findings, total_debit, total_credit):
     prompt = f"""
-Sen kıdemli bir Yeminli Mali Müşavir (YMM) ve Bağımsız Denetçisin.
-
-Aşağıda bir şirkete ait mizan özeti ve kural motoru tarafından tespit edilen vergi risk bulguları yer almaktadır:
+Sen kıdemli bir Bağımsız Denetçi ve Yeminli Mali Müşavirsin.
+Aşağıdaki mizan denetim sonuçlarını VUK, KVK ve Tekdüzen Hesap Planı ilkelerine göre değerlendir:
 
 - Toplam Borç Tutarı: {total_debit:,.2f} TL
 - Toplam Alacak Tutarı: {total_credit:,.2f} TL
 - Tespit Edilen Risk Sayısı: {len(findings)}
 - Öne Çıkan Bulgular: {str(findings[:4])}
 
-Lütfen bu verileri VUK, KVK ve Tekdüzen Hesap Planı ilkeleri açısından değerlendir.
 Şirket yönetimi ve mali müşavir için 3-4 cümlelik, net, profesyonel bir Yönetici Denetim Özeti yaz.
-Varsa acilen atılması gereken düzeltme adımlarını (özellikle Adat faizi, kasa fazlası ve örtülü sermaye konularında) vurgula.
-"""
-    return call_gemini_api(prompt)
-
-
-def generate_rag_answer(question: str, context: str) -> str:
-    prompt = f"""
-Sen Türkiye vergi mevzuatı konusunda uzmanlaşmış bir yapay zekâ asistanısın.
-Kullanıcının sorusunu yalnızca aşağıda verilen mevzuat kaynaklarına dayanarak cevapla.
-
-KURALLAR:
-1. Cevabı yalnızca verilen mevzuat metinlerine dayanarak oluştur.
-2. Verilen kaynaklarda bulunmayan bir bilgiyi uydurma.
-3. Her önemli hukuki açıklamanın yanında ilgili kanun ve madde numarasını belirt.
-4. Birden fazla madde birlikte değerlendiriliyorsa bunu açıkça belirt.
-5. Sorunun doğrudan dayanağı olan maddeyi öncelikle kullan.
-6. Kaynaklardan kesin bir sonuç çıkarılamıyorsa bunu açıkça söyle.
-7. Gereksiz uzun açıklamalar yapma; önce doğrudan cevabı ver, ardından gerekçeyi açıkla.
-8. Kaynaklarda bulunmayan güncel oran veya cezaları tahmin etme.
-9. Cevabın sonunda 'Dayanak' başlığı altında kullandığın kanun ve madde numaralarını belirt.
-
-KULLANICI SORUSU:
-{question}
-
-MEVZUAT KAYNAKLARI:
-{context}
-
-CEVAP:
+Özellikle Adat faizi, kasa fazlası ve 331 örtülü sermaye konularında acil atılması gereken düzeltme adımlarını belirt.
 """
     return call_gemini_api(prompt)
 
 
 # ============================================================
-# GÜVENLİK VE TÜRK FORMATI SAYI ÇEVİRİCİ
+# GÜVENLİK VE TÜRK SAYI FORMATI ÇEVİRİCİ
 # ============================================================
 
 security = HTTPBearer(auto_error=False)
@@ -338,8 +464,7 @@ def get_current_user_optional(
     email = auth.verify_access_token(token)
     if not email:
         return None
-    user = db.query(models.User).filter(models.User.email == email).first()
-    return user
+    return db.query(models.User).filter(models.User.email == email).first()
 
 
 def parse_turkish_float(val) -> float:
@@ -361,7 +486,7 @@ def parse_turkish_float(val) -> float:
 
 
 # ============================================================
-# SMMM MİZAN DENETİM KURAL MATRİSİ (YMM TERMİNOLOJİ GÜNCELLEMESİ)
+# SMMM MİZAN DENETİM KURAL MATRİSİ (YMM UYUMLU)
 # ============================================================
 
 def load_audit_rules():
@@ -369,12 +494,12 @@ def load_audit_rules():
         try:
             with open("rules.json", "r", encoding="utf-8") as f:
                 rules = json.load(f)
-                print(f"[Bilgi] rules.json başarıyla yüklendi. Toplam kural: {len(rules)}")
+                print(f"[Bilgi] rules.json başarıyla yüklendi. Kural sayısı: {len(rules)}")
                 return rules
         except Exception as e:
-            print(f"[Hata] rules.json okunurken hata oluştu: {e}")
+            print(f"[Hata] rules.json okunamadı: {e}")
 
-    # Fallback kurallar (rules.json yoksa doğrudan devreye girer)
+    # Fallback kurallar
     return {
         "100": {
             "prefix": "100",
@@ -398,7 +523,7 @@ def load_audit_rules():
             "category": "Örtülü Sermaye ve Finansman Gider Kısıtlaması",
             "title": "331 Ortaklara Borçlar: Örtülü Sermaye ve Finansman Gider Kısıtlaması Riski",
             "law": "KVK Madde 12, KVK Madde 11/1-(i)",
-            "desc": "Ortaklardan alınan borçlar özkaynakların 3 katını aştığında örtülü sermaye sayılır; faiz ve kur farkları KKEG yapılır. Ayrıca yabancı kaynaklar özkaynakları aşıyorsa finansman gider kısıtlaması doğar.",
+            "desc": "Ortaklardan alınan borçlar dönem başı özkaynakların 3 katını aşarsa örtülü sermaye sayılır; aşan kısma ait faiz ve kur farkları KKEG yapılır.",
             "journal_lines": [
                 {"account": "331 Ortaklara Borçlar", "type": "BORÇ"},
                 {"account": "102 Bankalar", "type": "ALACAK"}
@@ -410,7 +535,7 @@ AUDIT_MATRIX = load_audit_rules()
 
 
 # ============================================================
-# DİNAMİK MİZAN DENETİM ÇEKİRDEĞİ
+# MİZAN DENETİM ÇEKİRDEĞİ
 # ============================================================
 
 def run_python_audit(accounts):
@@ -418,7 +543,7 @@ def run_python_audit(accounts):
     total_debit = 0.0
     total_credit = 0.0
 
-    # Çift saymayı önleme kontrolü (3 haneli ana hesaplar varsa alt hesaplar toplamı şişirmesin)
+    # Çift saymayı önleyen 3 haneli hesap kontrolü
     has_three_digit_codes = any(
         len(str(r.get("code", "")).strip().split(".")[0]) == 3
         for r in accounts
@@ -438,12 +563,8 @@ def run_python_audit(accounts):
             total_debit += debit
             total_credit += credit
 
-        debit_bal = parse_turkish_float(
-            row.get("debitBal", debit - credit if debit > credit else 0)
-        )
-        credit_bal = parse_turkish_float(
-            row.get("creditBal", credit - debit if credit > debit else 0)
-        )
+        debit_bal = parse_turkish_float(row.get("debitBal", debit - credit if debit > credit else 0))
+        credit_bal = parse_turkish_float(row.get("creditBal", credit - debit if credit > debit else 0))
 
         for key, rule in AUDIT_MATRIX.items():
             prefix = rule.get("prefix", "")
@@ -462,11 +583,7 @@ def run_python_audit(accounts):
                         "journal_suggestion": {
                             "description": rule.get("desc", ""),
                             "lines": [
-                                {
-                                    "account": l["account"],
-                                    "type": l["type"],
-                                    "amount": credit_bal
-                                }
+                                {"account": l["account"], "type": l["type"], "amount": credit_bal}
                                 for l in rule.get("journal_lines", [])
                             ]
                         }
@@ -484,11 +601,7 @@ def run_python_audit(accounts):
                         "journal_suggestion": {
                             "description": rule.get("desc", ""),
                             "lines": [
-                                {
-                                    "account": l["account"],
-                                    "type": l["type"],
-                                    "amount": debit_bal
-                                }
+                                {"account": l["account"], "type": l["type"], "amount": debit_bal}
                                 for l in rule.get("journal_lines", [])
                             ]
                         }
@@ -530,7 +643,6 @@ def run_python_audit(accounts):
                         }
                     })
 
-                # 331 Nolu Hesap İnce Ayarı: Örtülü Sermaye ve Finansman Gider Kısıtlaması
                 elif check_type == "credit_balance_equity_risk" and credit_bal > 0.01:
                     findings.append({
                         "code": raw_code,
@@ -541,19 +653,15 @@ def run_python_audit(accounts):
                         "amount": credit_bal,
                         "law": rule.get("law", "KVK Madde 12, KVK Madde 11/1-(i)"),
                         "journal_suggestion": {
-                            "description": rule.get("desc", "Ortaklardan alınan borçlar özkaynakların 3 katını aşarsa örtülü sermaye sayılır; aşan kısma ait faiz/kur farkı giderleri KKEG yapılır."),
+                            "description": rule.get("desc", "Ortaklardan alınan borçlar özkaynakların 3 katını aşarsa örtülü sermaye sayılır; faiz/kur farkı giderleri KKEG yapılır."),
                             "lines": [
-                                {
-                                    "account": l["account"],
-                                    "type": l["type"],
-                                    "amount": credit_bal
-                                }
+                                {"account": l["account"], "type": l["type"], "amount": credit_bal}
                                 for l in rule.get("journal_lines", [])
                             ]
                         }
                     })
 
-    # Mizan Denkliği
+    # Mizan Denklik Hesabı
     balance_diff = abs(total_debit - total_credit)
     is_balanced = balance_diff < 1.0
 
@@ -572,12 +680,7 @@ def run_python_audit(accounts):
             }
         })
 
-    ai_summary = generate_ai_executive_summary(
-        accounts,
-        findings,
-        total_debit,
-        total_credit
-    )
+    ai_summary = generate_ai_executive_summary(accounts, findings, total_debit, total_credit)
 
     return {
         "is_balanced": is_balanced,
@@ -603,10 +706,7 @@ def register(user: dict, db: Session = Depends(get_db)):
 
     db_user = db.query(models.User).filter(models.User.email == email).first()
     if db_user:
-        raise HTTPException(
-            status_code=400,
-            detail="Bu e-posta adresi ile zaten kayıt olunmuş."
-        )
+        raise HTTPException(status_code=400, detail="Bu e-posta adresi ile zaten kayıt olunmuş.")
 
     hashed_password = auth.get_password_hash(password)
     new_user = models.User(
@@ -632,10 +732,7 @@ def login(credentials: dict, db: Session = Depends(get_db)):
 
     db_user = db.query(models.User).filter(models.User.email == email).first()
     if not db_user or not auth.verify_password(password, db_user.password_hash):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Geçersiz e-posta veya şifre."
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Geçersiz e-posta veya şifre.")
 
     access_token = auth.create_access_token(data={"sub": db_user.email})
     return {"access_token": access_token, "token_type": "bearer"}
@@ -645,41 +742,48 @@ def login(credentials: dict, db: Session = Depends(get_db)):
 def run_audit(payload: dict, current_user=Depends(get_current_user_optional)):
     accounts = payload.get("accounts", [])
     if not accounts:
-        raise HTTPException(
-            status_code=400,
-            detail="Denetlenecek mizan hesapları bulunamadı."
-        )
-
-    result = run_python_audit(accounts)
-    return result
+        raise HTTPException(status_code=400, detail="Denetlenecek mizan hesapları bulunamadı.")
+    return run_python_audit(accounts)
 
 
 @app.post("/rag/ask")
 def rag_ask(payload: dict, current_user=Depends(get_current_user_optional)):
     """
-    RAG Soru-Cevap Uç Noktası.
-    Context payload içinde gelirse doğrudan kullanır;
-    gelmezse Supabase bilgi bankasında hafif vektör/metin araması yaparak
-    en alakalı mevzuatı otomatik çeker ve cevaplar.
+    V10 RAG Uç Noktası:
+    Kullanıcı sadece soruyu gönderdiğinde, Supabase 'tax_documents' tablosundan
+    V10 Motoru (BM25 + Semantic + Exact Phrase + Intent) ile kanun maddelerini bulur,
+    Gemini'ye ileterek mevzuata dayalı kesin cevap ve Dayanak listesi üretir.
     """
     question = payload.get("question", "").strip()
     context = payload.get("context", "").strip()
 
     if not question:
-        raise HTTPException(status_code=400, detail="Soru gönderilmedi.")
+        raise HTTPException(status_code=400, detail="Soru boş bırakılamaz.")
 
-    # Context boşsa Supabase bilgi tabanından otomatik ara
+    matched_sources = []
+    # Eğer kullanıcı dışarıdan context göndermediyse V10 Motorunu çalıştır
     if not context:
-        context = search_supabase_knowledge_base(question)
+        context, matched_sources = retrieve_v10_mevzuat(question, top_k=4)
 
     if not context:
-        context = "Kullanıcıya özel mevzuat kaynağı bulunamadı. Genel VUK, KVK ve Türk Vergi Hukuku prensipleri çerçevesinde değerlendiriniz."
+        context = "Kullanıcıya özel mevzuat maddesi eşleşmedi. Genel VUK, KVK ve KDVK prensipleri çerçevesinde yanıtlayınız."
 
+    # Gemini'ye ilet ve cevabı al
     answer = generate_rag_answer(question, context)
+
     return {
         "question": question,
-        "context_used": bool(context),
-        "answer": answer
+        "answer": answer,
+        "sources_count": len(matched_sources),
+        "sources": [
+            {
+                "law": s.get("law_name") or s.get("kanun"),
+                "article": s.get("article_no") or s.get("madde"),
+                "title": s.get("title") or s.get("baslik"),
+                "v10_score": s.get("v10_score")
+            }
+            for s in matched_sources
+        ]
     }
 
 
@@ -689,6 +793,6 @@ def read_root():
         with open("index.html", "r", encoding="utf-8") as f:
             return f.read()
     return (
-        "<h1>SMMM Mizan Denetim API Çalışıyor</h1>"
-        "<p>index.html dosyası bulunamadı.</p>"
+        "<h1>SMMM Mizan Denetim & V10 RAG API Çalışıyor</h1>"
+        "<p>API aktif. Dokümantasyon için <a href='/docs'>/docs</a> sayfasını ziyaret edin.</p>"
     )

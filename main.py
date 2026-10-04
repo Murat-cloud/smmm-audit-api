@@ -30,7 +30,7 @@ import models, schemas, auth
 
 app = FastAPI(
     title="SMMM Mizan Denetim SaaS API",
-    version="4.2.0"
+    version="4.2.1"
 )
 
 app.add_middleware(
@@ -45,13 +45,17 @@ app.add_middleware(
 Base.metadata.create_all(bind=engine)
 
 # ============================================================
-# ORTAM DEĞİŞKENLERİ VE SUPABASE BAĞLANTISI
+# ORTAM DEĞİŞKENLERİ VE KONFİGÜRASYON
 # ============================================================
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-HF_API_KEY = os.getenv("HF_API_KEY", "")  # Opsiyonel: HuggingFace Serverless Inference
+HF_API_KEY = os.getenv("HF_API_KEY", "")  # Hugging Face Inference API Token (Opsiyonel)
+
+# Supabase vector sütun boyutunuz (Varsayılan 384 - e5-small ile tam uyumlu)
+# Eğer Supabase'de vector(768) kullandıysanız Render ortam değişkenine VECTOR_DIM=768 yazabilirsiniz.
+VECTOR_DIM = int(os.getenv("VECTOR_DIM", "384"))
 
 supabase: Optional[Client] = None
 if SUPABASE_URL and SUPABASE_KEY:
@@ -63,60 +67,71 @@ if SUPABASE_URL and SUPABASE_KEY:
 else:
     print("[Uyarı] SUPABASE_URL veya SUPABASE_KEY tanımlı değil.")
 
-# ============================================================
-# HAFİF EMBEDDING VE RERANK ENGINE (512 MB DOSTU)
-# ============================================================
-# 512 MB bellekli sunucularda `torch` ve `SentenceTransformer`
-# yüklemek OOM (Out Of Memory) çökmesine sebep olur.
-# Bu nedenle embedding işlemleri Gemini API veya HF API üzerinden
-# sıfır RAM maliyetiyle yürütülür.
 
-def get_text_embedding(text: str) -> List[float]:
+# ============================================================
+# 512 MB BELLEK DOSTU EMBEDDING & HİBRİT RERANK MOTORU
+# ============================================================
+
+def get_text_embedding(text: str, target_dim: int = VECTOR_DIM) -> List[float]:
     """
     Metnin embedding vektörünü alır.
-    Öncelikle Gemini text-embedding-004 API'sini kullanır.
-    İsteğe bağlı olarak HuggingFace e5-small endpoint'ini de destekler.
-    RAM kullanımı: ~0 MB.
+    Supabase'deki vector(384) veya vector(768) boyutuna tam uyması için
+    target_dim parametresini dinamik yönetir.
+    RAM Tüketimi: 0 MB (Dış REST API üzerinden).
     """
     clean_text = text.strip().replace("\n", " ")
     if not clean_text:
-        return [0.0] * 768
+        return [0.0] * target_dim
 
-    # 1. HuggingFace Serverless API (Eğer HF_API_KEY varsa ve e5-small isteniyorsa)
+    # 1. Seçenek: HuggingFace Serverless API (intfloat/multilingual-e5-small -> 384 Boyut)
     if HF_API_KEY:
         try:
             hf_url = "https://api-inference.huggingface.co/pipeline/feature-extraction/intfloat/multilingual-e5-small"
             headers = {"Authorization": f"Bearer {HF_API_KEY}"}
-            resp = requests.post(hf_url, headers=headers, json={"inputs": f"query: {clean_text}"}, timeout=8)
+            resp = requests.post(
+                hf_url,
+                headers=headers,
+                json={"inputs": f"query: {clean_text}"},
+                timeout=8
+            )
             if resp.status_code == 200:
                 res_json = resp.json()
-                if isinstance(res_json, list) and isinstance(res_json[0], (int, float)):
-                    return res_json
-                elif isinstance(res_json, list) and isinstance(res_json[0], list):
-                    return res_json[0]
+                if isinstance(res_json, list) and len(res_json) > 0:
+                    if isinstance(res_json[0], (int, float)):
+                        return res_json[:target_dim]
+                    elif isinstance(res_json[0], list):
+                        return res_json[0][:target_dim]
         except Exception as e:
-            print(f"[HF Embedding Hatası]: {e}")
+            print(f"[HF Inference API]: {e}")
 
-    # 2. Google Gemini Embedding REST API (Yerel kütüphane şişkinliği olmadan en kararlı yol)
+    # 2. Seçenek: Google Gemini text-embedding-004 REST API
+    # Gemini text-embedding-004 modeli 'outputDimensionality' desteği sayesinde
+    # doğrudan 384 veya 768 boyutlu çıktı verebilir!
     if GEMINI_API_KEY:
         try:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key={GEMINI_API_KEY}"
             payload = {
                 "model": "models/text-embedding-004",
-                "content": {"parts": [{"text": clean_text}]}
+                "content": {"parts": [{"text": clean_text}]},
+                "outputDimensionality": target_dim  # 384 vs 768 uyuşmazlığını çözen kilit parametre!
             }
             resp = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=10)
             if resp.status_code == 200:
-                data = resp.json()
-                return data.get("embedding", {}).get("values", [])
+                values = resp.json().get("embedding", {}).get("values", [])
+                if values:
+                    return values
             else:
-                # Fallback: embedding-001
-                url_old = f"https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key={GEMINI_API_KEY}"
-                resp_old = requests.post(url_old, json=payload, headers={"Content-Type": "application/json"}, timeout=10)
-                if resp_old.status_code == 200:
-                    return resp_old.json().get("embedding", {}).get("values", [])
+                # outputDimensionality parametresini desteklemeyen eski endpoint için fallback
+                payload_fallback = {
+                    "model": "models/text-embedding-004",
+                    "content": {"parts": [{"text": clean_text}]}
+                }
+                resp_fb = requests.post(url, json=payload_fallback, headers={"Content-Type": "application/json"}, timeout=10)
+                if resp_fb.status_code == 200:
+                    values = resp_fb.json().get("embedding", {}).get("values", [])
+                    return values[:target_dim] if values else []
         except Exception as e:
-            print(f"[Gemini Embedding Hatası]: {e}")
+            print(f"[Gemini Embedding API]: {e}")
 
     return []
 
@@ -124,7 +139,7 @@ def get_text_embedding(text: str) -> List[float]:
 def lightweight_rerank(query: str, documents: List[str], top_k: int = 5) -> List[str]:
     """
     Ağır PyTorch CrossEncoder yerine 512 MB bellek dostu
-    hibrit anahtar kelime + BM25 ve token örtüşme tabanlı reranker.
+    hibrit BM25 ve token örtüşme tabanlı reranker.
     """
     if not documents:
         return []
@@ -142,7 +157,7 @@ def lightweight_rerank(query: str, documents: List[str], top_k: int = 5) -> List
         except Exception:
             pass
 
-    # Basit token örtüşme fallback'i
+    # Token kesişimi fallback'i
     query_tokens = set(re.findall(r"\w+", query.lower()))
     def score_doc(doc: str) -> float:
         doc_tokens = set(re.findall(r"\w+", doc.lower()))
@@ -155,20 +170,20 @@ def lightweight_rerank(query: str, documents: List[str], top_k: int = 5) -> List
 def search_supabase_knowledge_base(query: str, match_count: int = 6) -> str:
     """
     Supabase üzerinde kayıtlı mevzuat veya döküman veritabanında arama yapar.
-    Hem vector similarity RPC hem de text search fallback'lerini destekler.
+    384/768 boyut hatasına karşı korumalıdır; hata olursa metin aramasına (ILIKE) düşer.
     """
     if not supabase:
         return ""
 
-    query_embedding = get_text_embedding(query)
+    query_embedding = get_text_embedding(query, target_dim=VECTOR_DIM)
     retrieved_texts: List[str] = []
 
-    # 1. Supabase pgvector RPC (varsa)
+    # 1. Supabase pgvector RPC Araması
     if query_embedding:
         try:
             rpc_res = supabase.rpc("match_documents", {
                 "query_embedding": query_embedding,
-                "match_threshold": 0.5,
+                "match_threshold": 0.45,
                 "match_count": match_count
             }).execute()
 
@@ -178,41 +193,43 @@ def search_supabase_knowledge_base(query: str, match_count: int = 6) -> str:
                     if content:
                         retrieved_texts.append(content)
         except Exception as e:
-            # RPC tanımlı değilse devam et
-            pass
+            # Boyut uyuşmazlığı ("different vector dimensions") veya RPC yoksa yakala
+            print(f"[Supabase RPC Uyarısı - Metin aramasına geçiliyor]: {e}")
 
-    # 2. Text / ILIKE Fallback (Eğer vektör aramasından sonuç gelmediyse)
+    # 2. Text / ILIKE Fallback Zinciri (Vektör aramasından sonuç dönmezse)
     if not retrieved_texts:
         try:
-            # Yaygın tablo isimlerini kontrol eder (documents, mevzuat, chunks vb.)
+            query_words = [w for w in re.findall(r"\w+", query) if len(w) > 3]
+            search_pattern = f"%{query_words[0]}%" if query_words else "%vergi%"
+
             for table_name in ["documents", "mevzuat", "knowledge_base", "law_articles"]:
                 try:
-                    res = supabase.table(table_name).select("*").limit(match_count).execute()
+                    res = supabase.table(table_name).select("*").ilike("content", search_pattern).limit(match_count).execute()
                     if res.data:
                         for row in res.data:
                             content = row.get("content") or row.get("text") or row.get("description") or ""
                             if content:
                                 retrieved_texts.append(content)
-                        break
+                        if retrieved_texts:
+                            break
                 except Exception:
                     continue
         except Exception as e:
-            print(f"[Supabase Text Search]: {e}")
+            print(f"[Supabase Metin Fallback]: {e}")
 
-    # Reranking uygula
+    # Reranking ile en alakalı parçaları seç
     top_docs = lightweight_rerank(query, retrieved_texts, top_k=4)
     return "\n\n---\n\n".join(top_docs)
 
 
 # ============================================================
-# GEMINI YAPAY ZEKA MOTORU (REST & PYTHON UYUMLU)
+# GEMINI REST API ÇAĞRICISI
 # ============================================================
 
 def call_gemini_api(prompt: str) -> str:
     """
-    Gemini API'sini REST protokolüyle doğrudan çağırır.
-    Böylelikle eski google.generativeai veya yeni google.genai paket
-    çakışmalarından, deprecation uyarılarından ve bellek sızıntılarından korunur.
+    Google GenAI SDK şişkinliği ve deprecation uyarıları olmaksızın
+    doğrudan REST API ile yanıt üretir.
     """
     if not GEMINI_API_KEY:
         return "Gemini API Anahtarı (GEMINI_API_KEY) tanımlı değil."
@@ -229,13 +246,7 @@ def call_gemini_api(prompt: str) -> str:
     for model_name in models_to_try:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={GEMINI_API_KEY}"
         payload = {
-            "contents": [
-                {
-                    "parts": [
-                        {"text": prompt}
-                    ]
-                }
-            ],
+            "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": {
                 "temperature": 0.2,
                 "maxOutputTokens": 2048
@@ -243,13 +254,7 @@ def call_gemini_api(prompt: str) -> str:
         }
 
         try:
-            resp = requests.post(
-                url,
-                json=payload,
-                headers={"Content-Type": "application/json"},
-                timeout=30
-            )
-
+            resp = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=30)
             if resp.status_code == 200:
                 data = resp.json()
                 candidates = data.get("candidates", [])
@@ -258,16 +263,16 @@ def call_gemini_api(prompt: str) -> str:
                     if parts and "text" in parts[0]:
                         return parts[0]["text"].strip()
             elif resp.status_code == 429:
-                last_error = "429 Quota Exceeded"
+                last_error = "429 Kota Sınırı"
                 continue
             else:
-                last_error = f"HTTP {resp.status_code}: {resp.text[:150]}"
+                last_error = f"HTTP {resp.status_code}: {resp.text[:120]}"
         except Exception as e:
             last_error = str(e)
             continue
 
     if "429" in last_error or "quota" in last_error.lower():
-        return "Google Gemini API ücretsiz kota sınırına ulaşıldı. Lütfen birkaç dakika sonra tekrar deneyin."
+        return "Google Gemini API ücretsiz kota sınırına ulaşıldı. Lütfen kısa süre sonra tekrar deneyin."
 
     return f"Yapay zekâ yanıtı oluşturulamadı (Hata: {last_error})"
 
@@ -285,7 +290,7 @@ Aşağıda bir şirkete ait mizan özeti ve kural motoru tarafından tespit edil
 
 Lütfen bu verileri VUK, KVK ve Tekdüzen Hesap Planı ilkeleri açısından değerlendir.
 Şirket yönetimi ve mali müşavir için 3-4 cümlelik, net, profesyonel bir Yönetici Denetim Özeti yaz.
-Varsa acilen atılması gereken düzeltme adımlarını vurgula.
+Varsa acilen atılması gereken düzeltme adımlarını (özellikle Adat faizi, kasa fazlası ve örtülü sermaye konularında) vurgula.
 """
     return call_gemini_api(prompt)
 
@@ -302,11 +307,9 @@ KURALLAR:
 4. Birden fazla madde birlikte değerlendiriliyorsa bunu açıkça belirt.
 5. Sorunun doğrudan dayanağı olan maddeyi öncelikle kullan.
 6. Kaynaklardan kesin bir sonuç çıkarılamıyorsa bunu açıkça söyle.
-7. Gereksiz uzun açıklamalar yapma.
-8. Önce doğrudan cevabı ver, ardından gerekçeyi açıkla.
-9. Mevzuat metnini gereksiz yere uzun şekilde tekrar etme.
-10. Kaynaklarda bulunmayan güncel oran, tarih, istisna veya ceza miktarını tahmin etme.
-11. Cevabın sonunda 'Dayanak' başlığı altında kullandığın kanun ve madde numaralarını belirt.
+7. Gereksiz uzun açıklamalar yapma; önce doğrudan cevabı ver, ardından gerekçeyi açıkla.
+8. Kaynaklarda bulunmayan güncel oran veya cezaları tahmin etme.
+9. Cevabın sonunda 'Dayanak' başlığı altında kullandığın kanun ve madde numaralarını belirt.
 
 KULLANICI SORUSU:
 {question}
@@ -358,7 +361,7 @@ def parse_turkish_float(val) -> float:
 
 
 # ============================================================
-# SMMM MİZAN DENETİM KURAL MATRİSİ
+# SMMM MİZAN DENETİM KURAL MATRİSİ (YMM TERMİNOLOJİ GÜNCELLEMESİ)
 # ============================================================
 
 def load_audit_rules():
@@ -371,7 +374,7 @@ def load_audit_rules():
         except Exception as e:
             print(f"[Hata] rules.json okunurken hata oluştu: {e}")
 
-    # Fallback temel kural
+    # Fallback kurallar (rules.json yoksa doğrudan devreye girer)
     return {
         "100": {
             "prefix": "100",
@@ -385,6 +388,20 @@ def load_audit_rules():
             "journal_lines": [
                 {"account": "131 Ort. Alacaklar", "type": "BORÇ"},
                 {"account": "100 Kasa Hesabı", "type": "ALACAK"}
+            ]
+        },
+        "331": {
+            "prefix": "331",
+            "name": "Ortaklara Borçlar",
+            "check": "credit_balance_equity_risk",
+            "level": "KRİTİK",
+            "category": "Örtülü Sermaye ve Finansman Gider Kısıtlaması",
+            "title": "331 Ortaklara Borçlar: Örtülü Sermaye ve Finansman Gider Kısıtlaması Riski",
+            "law": "KVK Madde 12, KVK Madde 11/1-(i)",
+            "desc": "Ortaklardan alınan borçlar özkaynakların 3 katını aştığında örtülü sermaye sayılır; faiz ve kur farkları KKEG yapılır. Ayrıca yabancı kaynaklar özkaynakları aşıyorsa finansman gider kısıtlaması doğar.",
+            "journal_lines": [
+                {"account": "331 Ortaklara Borçlar", "type": "BORÇ"},
+                {"account": "102 Bankalar", "type": "ALACAK"}
             ]
         }
     }
@@ -401,6 +418,7 @@ def run_python_audit(accounts):
     total_debit = 0.0
     total_credit = 0.0
 
+    # Çift saymayı önleme kontrolü (3 haneli ana hesaplar varsa alt hesaplar toplamı şişirmesin)
     has_three_digit_codes = any(
         len(str(r.get("code", "")).strip().split(".")[0]) == 3
         for r in accounts
@@ -486,12 +504,12 @@ def run_python_audit(accounts):
                         "code": raw_code,
                         "name": name,
                         "level": rule.get("level", "KRİTİK"),
-                        "category": rule.get("category", "Transfer Fiyatlandırması"),
-                        "title": rule.get("title", "Adat Faiz Hesabı Gerekli"),
+                        "category": rule.get("category", "Transfer Fiyatlandırması ve Adat"),
+                        "title": rule.get("title", "Adat Faiz Hesabı ve KDV Hesaplanması Gerekli"),
                         "amount": debit_bal,
-                        "law": rule.get("law", ""),
+                        "law": rule.get("law", "KVK Madde 13, KDVK Madde 24"),
                         "journal_suggestion": {
-                            "description": rule.get("desc", ""),
+                            "description": rule.get("desc", "Ortaklara kullandırılan şirket paraları için adat faizi yürütülmelidir."),
                             "lines": [
                                 {
                                     "account": j_lines[0]["account"] if len(j_lines) > 0 else "131 Ortaklardan Alacaklar",
@@ -512,17 +530,18 @@ def run_python_audit(accounts):
                         }
                     })
 
+                # 331 Nolu Hesap İnce Ayarı: Örtülü Sermaye ve Finansman Gider Kısıtlaması
                 elif check_type == "credit_balance_equity_risk" and credit_bal > 0.01:
                     findings.append({
                         "code": raw_code,
                         "name": name,
                         "level": rule.get("level", "KRİTİK"),
-                        "category": rule.get("category", "Özsermaye Koruma"),
-                        "title": rule.get("title", "Özsermaye Kaybı Riski"),
+                        "category": rule.get("category", "Örtülü Sermaye ve Finansman Gider Kısıtlaması"),
+                        "title": rule.get("title", "331 Ortaklara Borçlar: Örtülü Sermaye ve Finansman Gider Kısıtlaması Riski"),
                         "amount": credit_bal,
-                        "law": rule.get("law", ""),
+                        "law": rule.get("law", "KVK Madde 12, KVK Madde 11/1-(i)"),
                         "journal_suggestion": {
-                            "description": rule.get("desc", ""),
+                            "description": rule.get("desc", "Ortaklardan alınan borçlar özkaynakların 3 katını aşarsa örtülü sermaye sayılır; aşan kısma ait faiz/kur farkı giderleri KKEG yapılır."),
                             "lines": [
                                 {
                                     "account": l["account"],
@@ -534,7 +553,7 @@ def run_python_audit(accounts):
                         }
                     })
 
-    # Mizan Denkliği Kontrolü
+    # Mizan Denkliği
     balance_diff = abs(total_debit - total_credit)
     is_balanced = balance_diff < 1.0
 

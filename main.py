@@ -1,4 +1,3 @@
-```python
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -7,7 +6,6 @@ from sqlalchemy.orm import Session
 import os
 import google.generativeai as genai
 
-# Proje içi modülleriniz
 from database import engine, Base, get_db
 import models, schemas, auth
 
@@ -35,7 +33,7 @@ Base.metadata.create_all(bind=engine)
 # --- GÜVENLİ TÜRK FORMATI SAYI ÇEVİRİCİ ---
 def parse_turkish_float(val) -> float:
     """
-    Türk muhasebe programlarından (Zirve, Luca, Logo) gelen
+    Türk muhasebe programlarından gelen
     1.250.500,50 veya 1250500.50 gibi sayı formatlarını
     güvenle float yapar.
     """
@@ -112,7 +110,6 @@ def get_active_gemini_models():
 
                     discovered.append(name)
 
-            # Flash modellerini önceliklendir
             flashes = [
                 m for m in discovered
                 if "flash" in m.lower()
@@ -142,7 +139,6 @@ def get_active_gemini_models():
 
         return CACHED_AVAILABLE_MODELS
 
-    # API erişiminde liste gelmezse yedek modeller
     return [
         "gemini-2.5-flash",
         "gemini-2.0-flash",
@@ -164,10 +160,9 @@ def generate_ai_executive_summary(
     if not GEMINI_API_KEY:
 
         return (
-            "⚠️ Gemini API Anahtarı "
+            "Gemini API Anahtarı "
             "(GEMINI_API_KEY) ortam değişkenlerinde "
-            "tanımlı değil. Lütfen Render panelinden "
-            "Environment Variables alanına anahtarınızı ekleyin."
+            "tanımlı değil."
         )
 
     prompt = f"""
@@ -185,7 +180,7 @@ Lütfen bu verileri VUK, KVK ve Tekdüzen Hesap Planı
 ilkeleri açısından değerlendir.
 
 Şirket yönetimi ve mali müşavir için 3-4 cümlelik,
-net, profesyonel bir 'Yönetici Denetim Özeti' yaz.
+net, profesyonel bir Yönetici Denetim Özeti yaz.
 
 Varsa acilen atılması gereken düzeltme adımlarını vurgula.
 """
@@ -233,9 +228,8 @@ Varsa acilen atılması gereken düzeltme adımlarını vurgula.
     ):
 
         return (
-            "⚠️ Google Gemini API ücretsiz kota "
-            "sınırına ulaşıldı. Kural analizleri tamamlandı; "
-            "yapay zekâ metin özeti için daha sonra tekrar deneyebilirsiniz."
+            "Google Gemini API ücretsiz kota "
+            "sınırına ulaşıldı."
         )
 
     return (
@@ -253,7 +247,7 @@ def generate_rag_answer(question, context):
     if not GEMINI_API_KEY:
 
         return (
-            "⚠️ Gemini API Anahtarı "
+            "Gemini API Anahtarı "
             "(GEMINI_API_KEY) tanımlı değil."
         )
 
@@ -295,7 +289,7 @@ KURALLAR:
     istisna, ceza miktarı veya başka bir hukuki
     ayrıntıyı tahmin etme.
 
-11. Cevabın sonunda "Dayanak:" başlığı altında
+11. Cevabın sonunda Dayanak başlığı altında
     kullandığın kanun ve madde numaralarını belirt.
 
 KULLANICI SORUSU:
@@ -354,11 +348,11 @@ CEVAP:
     ):
 
         return (
-            "⚠️ Gemini API kota sınırına ulaşıldı."
+            "Gemini API kota sınırına ulaşıldı."
         )
 
     return (
-        f"⚠️ RAG cevabı oluşturulamadı. "
+        f"RAG cevabı oluşturulamadı. "
         f"Hata: {last_error}"
     )
 
@@ -477,7 +471,6 @@ def load_audit_rules():
     }
 
 
-# Kuralları uygulamaya yükle
 AUDIT_MATRIX = load_audit_rules()
 
 
@@ -534,7 +527,6 @@ def run_python_audit(accounts):
             )
         )
 
-        # Ana hesap / alt hesap ayrımı
         if has_three_digit_codes:
 
             if (
@@ -553,7 +545,6 @@ def run_python_audit(accounts):
             total_debit += debit
             total_credit += credit
 
-        # Bakiye hesaplama
         debit_bal = parse_turkish_float(
             row.get(
                 "debitBal",
@@ -572,7 +563,6 @@ def run_python_audit(accounts):
             )
         )
 
-        # Kural Matrisi Eşleştirmesi
         for key, rule in AUDIT_MATRIX.items():
 
             if (
@@ -585,7 +575,6 @@ def run_python_audit(accounts):
                 )
             ):
 
-                # 1. Alacak Bakiyesi Veremez
                 if (
                     rule["check"]
                     == "credit_balance"
@@ -623,7 +612,6 @@ def run_python_audit(accounts):
 
                     })
 
-                # 2. Borç Bakiyesi Veremez
                 elif (
                     rule["check"]
                     == "debit_balance"
@@ -661,7 +649,6 @@ def run_python_audit(accounts):
 
                     })
 
-                # 3. 131 Adatlandırma
                 elif (
                     rule["check"]
                     == "debit_balance_interest"
@@ -726,7 +713,6 @@ def run_python_audit(accounts):
 
                     })
 
-                # 4. 331 Örtülü Sermaye
                 elif (
                     rule["check"]
                     == "credit_balance_equity_risk"
@@ -817,7 +803,6 @@ def run_python_audit(accounts):
             }
         )
 
-    # Gemini Yönetici Özeti
     ai_summary = generate_ai_executive_summary(
         accounts,
         findings,
@@ -841,7 +826,6 @@ def run_python_audit(accounts):
 # ============================================================
 # API ENDPOINTLERİ
 # ============================================================
-
 
 @app.post("/register")
 def register(
@@ -966,7 +950,7 @@ def login(
     access_token = (
         auth.create_access_token(
             data={
-                "sub": new_user.email
+                "sub": db_user.email
             }
         )
     )
@@ -1078,30 +1062,3 @@ def read_root():
         "<h1>SMMM Mizan Denetim API Çalışıyor</h1>"
         "<p>index.html dosyası bulunamadı.</p>"
     )
-```
-
-**Bir kritik düzeltme:** Yukarıdaki kodu verirken mevcut `/login` içindeki `new_user.email` satırını yanlışlıkla korumamak gerekiyor. Senin gönderdiğin orijinal kodda da burada hata var: `new_user` tanımlı değil. Doğrusu `db_user.email` olmalı. Bu yüzden **yukarıdaki kodda `/login` bölümünü şu şekilde kullan:**
-
-```python id="2j8nfk"
-access_token = auth.create_access_token(
-    data={"sub": db_user.email}
-)
-```
-
-Bunu özellikle belirtiyorum çünkü Render deployunda bu endpoint ancak login çağrıldığında patlayabilecek bir bug olurdu.
-
-### Şimdi ne yapacaksın?
-
-**1. `main.py`yi bu güncel sürümle değiştir.**  
-**2. GitHub'a commit + push yap.**  
-**3. Render'ın yeniden deploy olmasını bekle.**
-
-Sonra **henüz Colab'a dokunma.**
-
-Bana yalnızca:
-
-> **“Render deploy başarılı.”**
-
-de.
-
-Ondan sonra `/rag/ask` endpoint'ini Colab'daki `rag_result` ile bağlayacağız.

@@ -17,7 +17,7 @@
     <!-- Marked.js: Yapay Zeka Markdown Formatını Şık HTML'e Çevirir -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
-    <!-- html2pdf.js: Tek Tıkla Kurumsal PDF Raporu Oluşturur -->
+    <!-- html2pdf.js: Kurumsal PDF Raporu Oluşturur -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <script>
@@ -38,7 +38,6 @@
     </script>
 
     <style>
-        /* Yapay zeka çıktısı için şık tipografi */
         .markdown-body h3 {
             font-size: 1.15rem;
             font-weight: 800;
@@ -48,7 +47,6 @@
             border-bottom: 1px solid rgba(255,255,255,0.15);
             padding-bottom: 0.25rem;
         }
-
         .markdown-body h4 {
             font-size: 0.95rem;
             font-weight: 700;
@@ -56,37 +54,28 @@
             margin-top: 0.75rem;
             margin-bottom: 0.25rem;
         }
-
         .markdown-body p {
             margin-bottom: 0.65rem;
             line-height: 1.6;
             color: #e0e7ff;
         }
-
         .markdown-body ul {
             list-style-type: disc;
             margin-left: 1.25rem;
             margin-bottom: 0.75rem;
             color: #e0e7ff;
         }
-
         .markdown-body li {
             margin-bottom: 0.35rem;
         }
-
         .markdown-body strong {
             color: #fbcfe8;
             font-weight: 700;
         }
-
         .markdown-body hr {
             border-color: rgba(255,255,255,0.1);
             margin: 1rem 0;
         }
-
-        /* =========================================================
-           MEVZUAT SORU-CEVAP
-           ========================================================= */
 
         .rag-markdown h1,
         .rag-markdown h2,
@@ -96,29 +85,24 @@
             margin-top: 1rem;
             margin-bottom: 0.5rem;
         }
-
         .rag-markdown p {
             margin-bottom: 0.75rem;
             line-height: 1.7;
             color: #334155;
         }
-
         .rag-markdown ul,
         .rag-markdown ol {
             margin-left: 1.25rem;
             margin-bottom: 0.75rem;
         }
-
         .rag-markdown li {
             margin-bottom: 0.4rem;
             color: #334155;
         }
-
         .rag-markdown strong {
             color: #312e81;
             font-weight: 700;
         }
-
         .rag-markdown hr {
             margin: 1rem 0;
             border-color: #e2e8f0;
@@ -128,12 +112,9 @@
 
 <body class="bg-slate-100 font-sans text-slate-800 antialiased h-screen flex overflow-hidden">
 
-    <!-- Sol Kenar Çubuğu (Kurumsal Menü) -->
+    <!-- Sol Kenar Çubuğu -->
     <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col justify-between hidden md:flex border-r border-slate-800">
-
         <div>
-
-            <!-- Logo & Başlık -->
             <div class="h-16 flex items-center px-6 bg-slate-950 border-b border-slate-800">
                 <i class="fa-solid fa-calculator text-indigo-400 text-2xl mr-3"></i>
                 <span class="font-bold text-white text-lg tracking-wide">
@@ -141,323 +122,79 @@
                 </span>
             </div>
 
-            <!-- Menü Linkleri -->
             <nav class="p-4 space-y-1">
-
-                <a
-                    href="#"
-                    onclick="switchTab('dashboard')"
-                    id="nav-dashboard"
-                    class="flex items-center px-4 py-3 rounded-xl bg-indigo-600 text-white font-medium transition shadow-lg shadow-indigo-600/20"
-                >
+                <a href="#auditSection" class="flex items-center px-4 py-3 rounded-xl bg-indigo-600 text-white font-medium transition shadow-lg shadow-indigo-600/20">
                     <i class="fa-solid fa-chart-pie w-6"></i>
                     Mizan & Denetim Paneli
                 </a>
-
-                <a
-                    href="#"
-                    onclick="switchTab('rules')"
-                    id="nav-rules"
-                    class="flex items-center px-4 py-3 rounded-xl hover:bg-slate-800 hover:text-white transition"
-                >
-                    <i class="fa-solid fa-book-bookmark w-6"></i>
-                    Mevzuat & Matrisler
+                <a href="#ragSection" class="flex items-center px-4 py-3 rounded-xl hover:bg-slate-800 hover:text-white transition">
+                    <i class="fa-solid fa-scale-balanced w-6"></i>
+                    Mevzuata Sor (V10 RAG)
                 </a>
-
             </nav>
         </div>
 
-        <!-- Kullanıcı Durumu -->
         <div class="p-4 bg-slate-950 border-t border-slate-800 flex items-center justify-between">
-
             <div class="flex items-center space-x-3">
-
                 <div class="w-9 h-9 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold">
                     M
                 </div>
-
                 <div>
-                    <p class="text-xs font-semibold text-white">
-                        SMMM Kullanıcısı
-                    </p>
-
-                    <p class="text-[10px] text-emerald-400 flex items-center">
+                    <p class="text-xs font-semibold text-white">SMMM Kullanıcısı</p>
+                    <p id="sidebarStatus" class="text-[10px] text-emerald-400 flex items-center">
                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span>
-                        Aktif Oturum
+                        Hazır
                     </p>
                 </div>
-
             </div>
-
-            <button
-                onclick="logout()"
-                class="text-slate-400 hover:text-rose-400 transition"
-                title="Çıkış Yap"
-            >
-                <i class="fa-solid fa-right-from-bracket"></i>
+            <button onclick="logout()" class="text-slate-400 hover:text-rose-400 transition" title="Çıkış / Sıfırla">
+                <i class="fa-solid fa-arrow-rotate-right"></i>
             </button>
-
         </div>
-
     </aside>
 
-
-    <!-- Ana İçerik Alanı -->
+    <!-- Ana İçerik -->
     <main class="flex-1 flex flex-col h-screen overflow-y-auto">
 
         <!-- Üst Bar -->
         <header class="h-16 bg-white border-b border-slate-200 px-8 flex items-center justify-between sticky top-0 z-10">
-
             <div class="flex items-center space-x-4">
-
                 <h1 class="text-xl font-bold text-slate-800">
-                    Yapay Zeka Destekli Mizan ve Denetim Asistanı
+                    Akıllı Mizan Denetim & V10 Mevzuat Motoru
                 </h1>
-
-                <span class="px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-full border border-indigo-100">
-                    LLM & VUK Sentez Motoru
+                <span class="hidden sm:inline-block px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-full border border-indigo-100">
+                    VUK & KVK Matrisi
                 </span>
-
             </div>
 
+            <!-- Canlı Sunucu Durum Rozeti -->
             <div class="flex items-center space-x-3">
-
-                <span
-                    id="authStatus"
-                    class="px-3 py-1 bg-amber-50 text-amber-700 text-xs font-medium rounded-full border border-amber-200"
-                >
-                    Giriş Yapılmadı
+                <span id="serverStatusBadge" class="px-3 py-1 bg-amber-50 text-amber-700 text-xs font-medium rounded-full border border-amber-200 flex items-center">
+                    <span class="w-2 h-2 rounded-full bg-amber-400 mr-2 animate-ping"></span>
+                    Sunucu Kontrol Ediliyor...
                 </span>
-
+                <span id="authStatusBadge" class="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded-full border border-slate-200">
+                    Misafir Modu
+                </span>
             </div>
-
         </header>
 
-
-        <!-- İçerik Gövdesi -->
         <div class="p-8 max-w-7xl mx-auto w-full space-y-6">
 
-
-            <!-- Giriş / Kayıt Sekmesi -->
-            <div
-                id="authSection"
-                class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6"
-            >
-
+            <!-- 1. MİZAN YÜKLEME VE ANALİZ ALANI (HERKESE AÇIK) -->
+            <div id="auditSection" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 transition">
                 <div class="flex items-center justify-between mb-4">
-
-                    <h2 class="text-lg font-bold text-slate-800 flex items-center">
-                        <i class="fa-solid fa-lock text-indigo-600 mr-2"></i>
-                        1. Oturum Aç / Kayıt Ol
-                    </h2>
-
-                    <span class="text-xs text-slate-500">
-                        Analiz başlatmak için giriş yapmanız önerilir.
-                    </span>
-
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-                    <input
-                        type="email"
-                        id="email"
-                        placeholder="E-posta Adresi"
-                        value="murat@smmm.com"
-                        class="px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm"
-                    >
-
-                    <input
-                        type="password"
-                        id="password"
-                        placeholder="Şifre"
-                        value="123456"
-                        class="px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm"
-                    >
-
-                    <div class="flex space-x-2">
-
-                        <button
-                            onclick="loginUser()"
-                            class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-4 rounded-xl transition text-sm shadow-sm"
-                        >
-                            Giriş Yap
-                        </button>
-
-                        <button
-                            onclick="registerUser()"
-                            class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium py-2.5 px-4 rounded-xl transition text-sm"
-                        >
-                            Kayıt Ol
-                        </button>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <!-- =====================================================
-                 MEVZUAT SORU-CEVAP ALANI
-                 Yeni eklenen bölüm
-                 ===================================================== -->
-
-            <div
-                id="ragSection"
-                class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6"
-            >
-
-                <div class="flex items-center justify-between mb-5">
-
-                    <div>
-
-                        <h2 class="text-lg font-bold text-slate-800 flex items-center">
-                            <i class="fa-solid fa-scale-balanced text-indigo-600 mr-2"></i>
-                            Mevzuata Sor
-                        </h2>
-
-                        <p class="text-xs text-slate-500 mt-1">
-                            Vergi mevzuatı hakkında sorunuzu yazın. Sistem ilgili mevzuat hükümlerini analiz ederek cevap oluşturur.
-                        </p>
-
-                    </div>
-
-                    <span class="hidden md:flex px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-full border border-indigo-100">
-                        RAG + Gemini
-                    </span>
-
-                </div>
-
-
-                <div class="space-y-4">
-
-                    <textarea
-                        id="ragQuestion"
-                        rows="4"
-                        placeholder="Örneğin: Katma değer vergisinde indirilecek KDV hangi şartlarda indirim konusu yapılabilir?"
-                        class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm resize-none"
-                    ></textarea>
-
-
-                    <div class="flex justify-end">
-
-                        <button
-                            id="btnAskRag"
-                            onclick="askRagFromWebsite()"
-                            class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-7 py-3 rounded-xl transition shadow-lg shadow-indigo-600/20 flex items-center justify-center"
-                        >
-                            <i class="fa-solid fa-wand-magic-sparkles mr-2"></i>
-                            Mevzuata Sor
-                        </button>
-
-                    </div>
-
-
-                    <!-- RAG Loading -->
-                    <div
-                        id="ragLoading"
-                        class="hidden bg-indigo-50 border border-indigo-100 rounded-xl p-5 text-center"
-                    >
-
-                        <div class="inline-block animate-spin text-indigo-600 text-2xl mb-2">
-                            <i class="fa-solid fa-circle-notch"></i>
-                        </div>
-
-                        <p class="font-semibold text-indigo-900 text-sm">
-                            Mevzuat inceleniyor ve yapay zeka cevabı hazırlanıyor...
-                        </p>
-
-                        <p class="text-xs text-indigo-600 mt-1">
-                            İlgili kanun ve maddeler analiz ediliyor.
-                        </p>
-
-                    </div>
-
-
-                    <!-- RAG Result -->
-                    <div
-                        id="ragResult"
-                        class="hidden"
-                    >
-
-                        <div class="border border-slate-200 rounded-2xl overflow-hidden">
-
-                            <div class="bg-slate-900 px-5 py-4 flex items-center justify-between">
-
-                                <div class="flex items-center">
-
-                                    <i class="fa-solid fa-robot text-indigo-400 mr-2"></i>
-
-                                    <span class="text-sm font-bold text-white">
-                                        Yapay Zeka Mevzuat Cevabı
-                                    </span>
-
-                                </div>
-
-                                <span class="text-[10px] font-semibold text-indigo-300 uppercase tracking-wider">
-                                    RAG + Gemini
-                                </span>
-
-                            </div>
-
-
-                            <div
-                                id="ragAnswer"
-                                class="p-6 bg-white rag-markdown text-sm"
-                            ></div>
-
-
-                            <!-- Kullanılan mevzuat -->
-                            <div
-                                id="ragSources"
-                                class="border-t border-slate-200 bg-slate-50 p-5"
-                            >
-
-                                <h4 class="text-sm font-bold text-slate-800 flex items-center mb-3">
-                                    <i class="fa-solid fa-book-open text-indigo-600 mr-2"></i>
-                                    Kullanılan Mevzuat
-                                </h4>
-
-                                <div
-                                    id="ragSourcesList"
-                                    class="space-y-2"
-                                ></div>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <!-- Mizan Yükleme Alanı -->
-            <div
-                id="auditSection"
-                class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 opacity-60 pointer-events-none transition"
-            >
-
-                <div class="flex items-center justify-between mb-4">
-
                     <h2 class="text-lg font-bold text-slate-800 flex items-center">
                         <i class="fa-solid fa-file-excel text-emerald-600 mr-2"></i>
-                        2. Mizan Dosyası Yükle ve Analiz Başlat
+                        1. Mizan Dosyası Yükle ve Analiz Başlat
                     </h2>
-
                     <span class="text-xs text-slate-500">
-                        Zirve, Luca, Logo, Mikro formatları desteklenir (.xlsx, .xls)
+                        Zirve, Luca, Logo, Mikro (.xlsx, .xls, .csv)
                     </span>
-
                 </div>
 
                 <div class="flex flex-col md:flex-row items-center gap-4">
-
                     <div class="flex-1 w-full border-2 border-dashed border-slate-300 rounded-xl p-5 text-center bg-slate-50 hover:bg-slate-100 transition cursor-pointer relative">
-
                         <input
                             type="file"
                             id="excelFile"
@@ -465,15 +202,10 @@
                             class="absolute inset-0 opacity-0 cursor-pointer"
                             onchange="updateFileName(this)"
                         >
-
-                        <div
-                            id="file-label-text"
-                            class="text-sm text-slate-600 font-medium flex items-center justify-center"
-                        >
+                        <div id="file-label-text" class="text-sm text-slate-600 font-medium flex items-center justify-center">
                             <i class="fa-solid fa-cloud-arrow-up text-indigo-500 text-xl mr-2"></i>
-                            Mizan dosyanızı yüklemek için tıklayın veya sürükleyin
+                            Mizan dosyanızı seçmek için tıklayın veya sürükleyin
                         </div>
-
                     </div>
 
                     <button
@@ -482,1353 +214,562 @@
                         class="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-8 py-4 rounded-xl transition shadow-lg shadow-emerald-600/20 flex items-center justify-center"
                     >
                         <i class="fa-solid fa-wand-magic-sparkles mr-2"></i>
-                        Yapay Zeka ile Analiz Et
+                        Mizanı Denetle
                     </button>
-
                 </div>
-
             </div>
 
-
-            <!-- Yükleniyor Göstergesi -->
-            <div
-                id="loadingIndicator"
-                class="hidden bg-white p-8 rounded-2xl border border-slate-200 shadow-sm text-center"
-            >
-
+            <!-- Yükleniyor Animasyonu -->
+            <div id="loadingIndicator" class="hidden bg-white p-8 rounded-2xl border border-slate-200 shadow-sm text-center">
                 <div class="inline-block animate-spin text-indigo-600 text-4xl mb-3">
                     <i class="fa-solid fa-circle-notch"></i>
                 </div>
-
                 <h4 class="font-bold text-slate-800 text-lg">
-                    Mizan Kuralları Denetleniyor & Gemini LLM Raporu Hazırlanıyor...
+                    Mizan Kuralları Denetleniyor & LLM Raporu Hazırlanıyor...
                 </h4>
-
                 <p class="text-slate-500 text-sm mt-1">
-                    VUK 215, KVK 12 & 13 maddeleri taranıyor, lütfen birkaç saniye bekleyin.
+                    Kasa 100, Ortaklar 131/331 ve Mizan Denkliği taranıyor.
                 </p>
-
             </div>
 
-
-            <!-- Sonuçlar ve Risk Paneli -->
-            <div
-                id="resultsSection"
-                class="space-y-6 hidden"
-            >
-
-                <!-- Rapor Aksiyon Butonları -->
+            <!-- 2. SONUÇLAR VE RİSK PANELİ -->
+            <div id="resultsSection" class="space-y-6 hidden">
                 <div class="flex flex-col sm:flex-row justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm gap-3">
-
                     <div>
-
-                        <h3 class="font-bold text-slate-800 text-lg">
-                            Denetim Sentezi ve Fiş Önerileri
-                        </h3>
-
-                        <p class="text-xs text-slate-500">
-                            YMM standartlarında vergi risk analizi ve yevmiye önerileri.
-                        </p>
-
+                        <h3 class="font-bold text-slate-800 text-lg">Denetim Sentezi ve Fiş Önerileri</h3>
+                        <p class="text-xs text-slate-500">YMM standartlarında vergi risk analizi ve yevmiye önerileri.</p>
                     </div>
-
                     <div class="flex space-x-2 w-full sm:w-auto">
-
-                        <button
-                            onclick="exportToPDF()"
-                            class="flex-1 sm:flex-none bg-rose-600 hover:bg-rose-700 text-white font-medium px-4 py-2.5 rounded-xl transition text-sm flex items-center justify-center shadow-sm"
-                        >
-                            <i class="fa-solid fa-file-pdf mr-2"></i>
-                            PDF Rapor İndir
+                        <button onclick="exportToPDF()" class="flex-1 sm:flex-none bg-rose-600 hover:bg-rose-700 text-white font-medium px-4 py-2.5 rounded-xl transition text-sm flex items-center justify-center shadow-sm">
+                            <i class="fa-solid fa-file-pdf mr-2"></i> PDF İndir
                         </button>
-
-                        <button
-                            onclick="exportToExcel()"
-                            class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2.5 rounded-xl transition text-sm flex items-center justify-center shadow-sm"
-                        >
-                            <i class="fa-solid fa-file-excel mr-2"></i>
-                            Excel İndir
+                        <button onclick="exportToExcel()" class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2.5 rounded-xl transition text-sm flex items-center justify-center shadow-sm">
+                            <i class="fa-solid fa-file-excel mr-2"></i> Excel İndir
                         </button>
-
                     </div>
-
                 </div>
 
-
-                <!-- PDF İÇİN YAZDIRILABİLİR ALAN BAŞLANGICI -->
                 <div id="printableReportArea" class="space-y-6">
-
-                    <!-- Yapay Zeka Sentez Kutusu -->
+                    <!-- LLM Yönetici Özeti -->
                     <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-7 rounded-2xl shadow-xl border border-indigo-700/50 relative overflow-hidden">
-
                         <div class="absolute right-4 top-4 text-indigo-500/20 text-7xl pointer-events-none">
                             <i class="fa-solid fa-brain"></i>
                         </div>
-
                         <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-300 mb-3 flex items-center">
                             <i class="fa-solid fa-wand-magic-sparkles mr-2 text-indigo-400"></i>
-                            Kıdemli Denetçi & YMM Yapay Zekâ (LLM) Analiz Raporu
+                            Kıdemli Denetçi & YMM Yönetici Özeti
                         </h4>
-
-                        <div
-                            id="aiSummaryText"
-                            class="markdown-body text-sm text-indigo-100"
-                        >
+                        <div id="aiSummaryText" class="markdown-body text-sm text-indigo-100">
                             Yapay zeka analizi bekleniyor...
                         </div>
-
                     </div>
 
+                    <!-- Özet Kutuları -->
+                    <div id="summaryBox" class="grid grid-cols-1 md:grid-cols-4 gap-4"></div>
 
-                    <!-- Özet Kartları -->
-                    <div
-                        id="summaryBox"
-                        class="grid grid-cols-1 md:grid-cols-4 gap-4"
-                    >
-                    </div>
-
-
-                    <!-- Detaylı Risk Tablosu ve Yevmiye Fişleri -->
+                    <!-- Risk Tablosu -->
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-
                         <div class="p-5 border-b border-slate-200 flex items-center justify-between">
-
                             <h3 class="font-bold text-slate-800 text-base flex items-center">
                                 <i class="fa-solid fa-triangle-exclamation text-amber-500 mr-2"></i>
-                                Denetim Bulguları ve Otomatik Düzeltme Fişleri
+                                Denetim Bulguları ve Düzeltme Yevmiye Fişleri
                             </h3>
-
                             <span class="text-xs bg-slate-100 text-slate-600 px-3 py-1 rounded-lg font-medium">
-                                VUK / KVK / TDHP Matrisi
+                                VUK / KVK Matrisi
                             </span>
-
                         </div>
-
                         <div class="overflow-x-auto">
-
                             <table class="w-full text-left border-collapse">
-
                                 <thead>
-
                                     <tr class="bg-slate-50 text-slate-600 uppercase text-[11px] font-bold tracking-wider border-b border-slate-200">
-
                                         <th class="p-4">Kod</th>
-                                        <th class="p-4">Hesap Adı & Risk Açıklaması</th>
-                                        <th class="p-4">Risk</th>
-                                        <th class="p-4">Kategori / Kanun</th>
+                                        <th class="p-4">Hesap & Bulgular</th>
+                                        <th class="p-4">Seviye</th>
+                                        <th class="p-4">Kategori / Mevzuat</th>
                                         <th class="p-4 text-right">Tutar (TL)</th>
-
                                     </tr>
-
                                 </thead>
-
-                                <tbody
-                                    id="findingsTableBody"
-                                    class="divide-y divide-slate-100 text-sm"
-                                ></tbody>
-
+                                <tbody id="findingsTableBody" class="divide-y divide-slate-100 text-sm"></tbody>
                             </table>
-
                         </div>
-
                     </div>
+                </div>
+            </div>
 
+            <!-- 3. MEVZUATA SOR (V10 RAG ALANI) -->
+            <div id="ragSection" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <div class="flex items-center justify-between mb-5">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center">
+                            <i class="fa-solid fa-scale-balanced text-indigo-600 mr-2"></i>
+                            2. Mevzuata Sor (V10 Hukuk Arama Motoru)
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-1">
+                            Vergi kanunları (VUK, KVK, GVK, KDVK) hakkında sorunuzu yazın; V10 motoru ilgili kanun maddesini bulup cevaplasın.
+                        </p>
+                    </div>
+                    <span class="px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-full border border-indigo-100">
+                        Supabase + Gemini
+                    </span>
                 </div>
 
+                <div class="space-y-4">
+                    <textarea
+                        id="ragQuestion"
+                        rows="3"
+                        placeholder="Örneğin: Vergi cezalarında zamanaşımı süresi nedir ve hangi hallerde kesilir?"
+                        class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm resize-none"
+                    ></textarea>
+
+                    <div class="flex justify-end">
+                        <button
+                            id="btnAskRag"
+                            onclick="askRagFromWebsite()"
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-7 py-3 rounded-xl transition shadow-lg shadow-indigo-600/20 flex items-center justify-center"
+                        >
+                            <i class="fa-solid fa-magnifying-glass mr-2"></i>
+                            Mevzuatta Ara & Cevapla
+                        </button>
+                    </div>
+
+                    <div id="ragLoading" class="hidden bg-indigo-50 border border-indigo-100 rounded-xl p-5 text-center">
+                        <div class="inline-block animate-spin text-indigo-600 text-2xl mb-2">
+                            <i class="fa-solid fa-circle-notch"></i>
+                        </div>
+                        <p class="font-semibold text-indigo-900 text-sm">
+                            V10 Arama Motoru 927 kanun maddesini tarıyor ve yanıt hazırlanıyor...
+                        </p>
+                    </div>
+
+                    <div id="ragResult" class="hidden">
+                        <div class="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                            <div class="bg-slate-900 px-5 py-4 flex items-center justify-between">
+                                <div class="flex items-center text-white font-bold text-sm">
+                                    <i class="fa-solid fa-robot text-indigo-400 mr-2"></i>
+                                    Yeminli Mali Müşavir Değerlendirmesi
+                                </div>
+                                <span class="text-[10px] font-semibold text-indigo-300 uppercase tracking-wider">
+                                    V10 RAG Engine
+                                </span>
+                            </div>
+
+                            <div id="ragAnswer" class="p-6 bg-white rag-markdown text-sm"></div>
+
+                            <div id="ragSources" class="border-t border-slate-200 bg-slate-50 p-5">
+                                <h4 class="text-sm font-bold text-slate-800 flex items-center mb-3">
+                                    <i class="fa-solid fa-book-bookmark text-indigo-600 mr-2"></i>
+                                    Dayanak Mevzuat Maddeleri
+                                </h4>
+                                <div id="ragSourcesList" class="space-y-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. KULLANICI HESABI (OPSİYONEL) -->
+            <div id="authSection" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-sm font-bold text-slate-700 flex items-center">
+                        <i class="fa-solid fa-user-lock text-slate-500 mr-2"></i>
+                        SMMM Kullanıcı Girişi (Opsiyonel)
+                    </h2>
+                    <span class="text-xs text-slate-400">Analiz yapmak için oturum açmak zorunlu değildir.</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <input type="email" id="email" placeholder="E-posta Adresi" value="murat@smmm.com" class="px-4 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <input type="password" id="password" placeholder="Şifre" value="123456" class="px-4 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <div class="flex space-x-2">
+                        <button onclick="loginUser()" class="flex-1 bg-slate-800 hover:bg-slate-900 text-white font-medium py-2 px-4 rounded-xl text-sm transition">Giriş Yap</button>
+                        <button onclick="registerUser()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium py-2 px-4 rounded-xl text-sm transition">Kayıt Ol</button>
+                    </div>
+                </div>
             </div>
 
         </div>
-
     </main>
 
-
-    <!-- JavaScript Mantığı -->
     <script>
-
+        // Backend API Adresi (Canlı Render URL'i)
         const API_URL = "https://smmm-audit-api-1.onrender.com";
 
         let authToken = localStorage.getItem("smmm_token") || "";
-
         let globalAuditResult = null;
 
-
         window.onload = function() {
-
+            checkServerHealth();
             if (authToken) {
                 updateUIAuth();
             }
-
         };
 
+        // Otomatik Sunucu Canlılık Kontrolü (Cold Start Takipçisi)
+        async function checkServerHealth() {
+            const badge = document.getElementById("serverStatusBadge");
+            try {
+                const res = await fetch(`${API_URL}/`, { method: "GET" });
+                if (res.ok) {
+                    badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 mr-2"></span> Sunucu Aktif`;
+                    badge.className = "px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full border border-emerald-200 flex items-center";
+                } else {
+                    badge.innerText = "Sunucu Yanıt Vermiyor";
+                }
+            } catch (err) {
+                badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 mr-2 animate-ping"></span> Sunucu Uyanıyor (Lütfen bekleyin...)`;
+                badge.className = "px-3 py-1 bg-amber-50 text-amber-700 text-xs font-medium rounded-full border border-amber-200 flex items-center";
+                // 10 saniye sonra tekrar dene
+                setTimeout(checkServerHealth, 10000);
+            }
+        }
 
         function updateFileName(input) {
-
             if (input.files && input.files[0]) {
-
                 document.getElementById('file-label-text').innerHTML =
                     `<i class="fa-solid fa-file-excel text-emerald-600 mr-2"></i> Seçilen: <strong>${input.files[0].name}</strong>`;
-
             }
-
         }
-
 
         async function registerUser() {
-
             const email = document.getElementById("email").value;
             const password = document.getElementById("password").value;
-
             try {
-
                 const res = await fetch(`${API_URL}/register`, {
-
                     method: "POST",
-
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-
-                    body: JSON.stringify({
-                        email,
-                        password,
-                        full_name: "Test SMMM",
-                        firm_name: "Test Mali Müşavirlik"
-                    })
-
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password, full_name: "SMMM Kullanıcısı", firm_name: "Mali Müşavirlik" })
                 });
-
                 const data = await res.json();
-
                 if (res.ok) {
-
                     authToken = data.access_token;
-
-                    localStorage.setItem(
-                        "smmm_token",
-                        authToken
-                    );
-
-                    alert("Kayıt başarılı ve giriş yapıldı!");
-
+                    localStorage.setItem("smmm_token", authToken);
+                    alert("Kayıt başarılı!");
                     updateUIAuth();
-
                 } else {
-
-                    alert(
-                        "Hata: " +
-                        (data.detail || "Kayıt başarısız")
-                    );
-
+                    alert("Kayıt Hatası: " + (data.detail || "İşlem başarısız."));
                 }
-
             } catch (err) {
-
-                alert(
-                    "Bağlantı hatası: Sunucuya ulaşılamıyor."
-                );
-
+                alert("Bağlantı hatası: Render sunucusu uyku modunda olabilir. 30 saniye sonra tekrar deneyin.");
             }
-
         }
-
 
         async function loginUser() {
-
             const email = document.getElementById("email").value;
             const password = document.getElementById("password").value;
-
             try {
-
                 const res = await fetch(`${API_URL}/login`, {
-
                     method: "POST",
-
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-
-                    body: JSON.stringify({
-                        email,
-                        password
-                    })
-
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password })
                 });
-
                 const data = await res.json();
-
                 if (res.ok) {
-
                     authToken = data.access_token;
-
-                    localStorage.setItem(
-                        "smmm_token",
-                        authToken
-                    );
-
+                    localStorage.setItem("smmm_token", authToken);
                     alert("Giriş başarılı!");
-
                     updateUIAuth();
-
                 } else {
-
-                    alert(
-                        "Hata: " +
-                        (data.detail || "Giriş başarısız")
-                    );
-
+                    alert("Giriş Hatası: " + (data.detail || "E-posta veya şifre hatalı."));
                 }
-
             } catch (err) {
-
-                alert(
-                    "Bağlantı hatası: Sunucuya ulaşılamıyor."
-                );
-
+                alert("Bağlantı hatası: Sunucuya ulaşılamıyor.");
             }
-
         }
-
 
         function updateUIAuth() {
-
             if (authToken) {
-
-                const badge =
-                    document.getElementById("authStatus");
-
-                badge.innerText =
-                    "Giriş Yapıldı (Aktif)";
-
-                badge.className =
-                    "px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full border border-emerald-200";
-
-                document
-                    .getElementById("auditSection")
-                    .classList
-                    .remove(
-                        "opacity-60",
-                        "pointer-events-none"
-                    );
-
+                const badge = document.getElementById("authStatusBadge");
+                badge.innerText = "Giriş Yapıldı";
+                badge.className = "px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full border border-emerald-200";
             }
-
         }
-
 
         function logout() {
-
             localStorage.removeItem("smmm_token");
-
             authToken = "";
-
             location.reload();
-
         }
 
-
-        /* =========================================================
-           MEVZUAT SORU-CEVAP
-           Yeni fonksiyon
-           ========================================================= */
-
-        async function askRagFromWebsite() {
-
-            const questionInput =
-                document.getElementById("ragQuestion");
-
-            const question =
-                questionInput.value.trim();
-
-            if (!question) {
-
-                alert(
-                    "Lütfen mevzuatla ilgili bir soru yazın."
-                );
-
-                questionInput.focus();
-
-                return;
-
-            }
-
-
-            const btn =
-                document.getElementById("btnAskRag");
-
-            const loading =
-                document.getElementById("ragLoading");
-
-            const resultBox =
-                document.getElementById("ragResult");
-
-            const answerBox =
-                document.getElementById("ragAnswer");
-
-            const sourcesList =
-                document.getElementById("ragSourcesList");
-
-
-            btn.disabled = true;
-
-            btn.classList.add(
-                "opacity-60",
-                "cursor-not-allowed"
-            );
-
-            loading.classList.remove("hidden");
-
-            resultBox.classList.add("hidden");
-
-            answerBox.innerHTML = "";
-
-            sourcesList.innerHTML = "";
-
-
-            try {
-
-                /*
-                 * NOT:
-                 * Şu an Render /rag/ask endpoint'i
-                 * question + context bekliyor.
-                 *
-                 * V10 retrieval'ı Render backend'ine
-                 * taşıdığımızda frontend yalnızca
-                 * question gönderecek.
-                 */
-
-                const res = await fetch(
-                    `${API_URL}/rag/ask`,
-                    {
-                        method: "POST",
-
-                        headers: {
-                            "Content-Type": "application/json",
-                            ...(authToken
-                                ? {
-                                    "Authorization":
-                                        `Bearer ${authToken}`
-                                }
-                                : {})
-                        },
-
-                        body: JSON.stringify({
-                            question: question
-                        })
-                    }
-                );
-
-
-                const data = await res.json();
-
-
-                if (!res.ok) {
-
-                    throw new Error(
-                        data.detail ||
-                        "Mevzuat cevabı alınamadı."
-                    );
-
-                }
-
-
-                /*
-                 * Gemini cevabı
-                 */
-                const answer =
-                    data.answer ||
-                    "Cevap oluşturulamadı.";
-
-
-                if (
-                    typeof marked !== "undefined"
-                ) {
-
-                    answerBox.innerHTML =
-                        marked.parse(answer);
-
-                } else {
-
-                    answerBox.innerText =
-                        answer;
-
-                }
-
-
-                /*
-                 * Kullanılan mevzuat
-                 *
-                 * Backend'den documents geldiğinde
-                 * otomatik olarak burada gösterilecek.
-                 */
-
-                const documents =
-                    data.documents || [];
-
-
-                if (documents.length === 0) {
-
-                    sourcesList.innerHTML = `
-                        <div class="text-xs text-slate-500">
-                            Kullanılan mevzuat bilgisi backend tarafından henüz gönderilmedi.
-                        </div>
-                    `;
-
-                } else {
-
-                    documents.forEach(
-                        (doc, index) => {
-
-                            const source =
-                                document.createElement(
-                                    "div"
-                                );
-
-                            source.className =
-                                "bg-white border border-slate-200 rounded-xl p-3";
-
-                            source.innerHTML = `
-                                <div class="flex items-start">
-                                    <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center mr-3 flex-shrink-0">
-                                        ${index + 1}
-                                    </span>
-
-                                    <div>
-                                        <p class="text-sm font-bold text-slate-800">
-                                            ${doc.kanun_kodu || ""}
-                                            ${doc.madde_no ? " | Madde " + doc.madde_no : ""}
-                                        </p>
-
-                                        <p class="text-xs text-slate-500 mt-0.5">
-                                            ${doc.baslik || ""}
-                                        </p>
-                                    </div>
-                                </div>
-                            `;
-
-                            sourcesList.appendChild(
-                                source
-                            );
-
-                        }
-                    );
-
-                }
-
-
-                resultBox.classList.remove(
-                    "hidden"
-                );
-
-
-                resultBox.scrollIntoView({
-                    behavior: "smooth",
-                    block: "start"
-                });
-
-
-            } catch (err) {
-
-                alert(
-                    "Mevzuat sorgusunda hata: " +
-                    err.message
-                );
-
-            } finally {
-
-                loading.classList.add(
-                    "hidden"
-                );
-
-                btn.disabled = false;
-
-                btn.classList.remove(
-                    "opacity-60",
-                    "cursor-not-allowed"
-                );
-
-            }
-
-        }
-
-
+        // MİZAN DOSYASINI OKUYUP ANALİZ ETME
         async function uploadAndAudit() {
-
-            const fileInput =
-                document.getElementById(
-                    "excelFile"
-                );
-
+            const fileInput = document.getElementById("excelFile");
             if (!fileInput.files.length) {
-
-                alert(
-                    "Lütfen bir mizan dosyası seçin."
-                );
-
+                alert("Lütfen önce bir Excel (.xlsx, .xls) mizan dosyası seçin.");
                 return;
-
             }
 
-
-            const file =
-                fileInput.files[0];
-
-            const reader =
-                new FileReader();
-
-
-            document
-                .getElementById(
-                    "loadingIndicator"
-                )
-                .classList
-                .remove("hidden");
-
-
-            document
-                .getElementById(
-                    "resultsSection"
-                )
-                .classList
-                .add("hidden");
-
-
-            document
-                .getElementById(
-                    "btnRunAudit"
-                )
-                .disabled = true;
-
-
-            reader.onload =
-                async function(e) {
-
-                    try {
-
-                        const data =
-                            new Uint8Array(
-                                e.target.result
-                            );
-
-                        const workbook =
-                            XLSX.read(
-                                data,
-                                {
-                                    type: 'array'
-                                }
-                            );
-
-                        const firstSheet =
-                            workbook.Sheets[
-                                workbook.SheetNames[0]
-                            ];
-
-                        const rows =
-                            XLSX.utils.sheet_to_json(
-                                firstSheet,
-                                {
-                                    header: 1
-                                }
-                            );
-
-
-                        let accounts = [];
-
-
-                        for (
-                            let i = 0;
-                            i < rows.length;
-                            i++
-                        ) {
-
-                            let r = rows[i];
-
-                            if (
-                                !r ||
-                                r.length < 4
-                            ) {
-                                continue;
-                            }
-
-
-                            let codeStr =
-                                String(
-                                    r[0] || ""
-                                ).trim();
-
-
-                            if (
-                                !codeStr ||
-                                isNaN(
-                                    parseInt(
-                                        codeStr.charAt(0)
-                                    )
-                                ) ||
-                                !(
-                                    codeStr.length >= 3 ||
-                                    codeStr.includes(".")
-                                )
-                            ) {
-                                continue;
-                            }
-
-
-                            accounts.push({
-
-                                code: codeStr,
-
-                                name:
-                                    String(
-                                        r[1] || ""
-                                    ).trim(),
-
-                                debit:
-                                    r[2] != null
-                                        ? r[2]
-                                        : 0,
-
-                                credit:
-                                    r[3] != null
-                                        ? r[3]
-                                        : 0,
-
-                                debitBal:
-                                    r[4] != null
-                                        ? r[4]
-                                        : 0,
-
-                                creditBal:
-                                    r[5] != null
-                                        ? r[5]
-                                        : 0
-
-                            });
-
-                        }
-
-
-                        if (
-                            accounts.length === 0
-                        ) {
-
-                            alert(
-                                "Mizan dosyasında geçerli hesap satırları bulunamadı. Lütfen standart formatta bir mizan yükleyin."
-                            );
-
-                            document
-                                .getElementById(
-                                    "loadingIndicator"
-                                )
-                                .classList
-                                .add("hidden");
-
-
-                            document
-                                .getElementById(
-                                    "btnRunAudit"
-                                )
-                                .disabled = false;
-
-                            return;
-
-                        }
-
-
-                        const res =
-                            await fetch(
-                                `${API_URL}/audit/run`,
-                                {
-                                    method: "POST",
-
-                                    headers: {
-                                        "Content-Type":
-                                            "application/json",
-
-                                        "Authorization":
-                                            `Bearer ${authToken}`
-                                    },
-
-                                    body:
-                                        JSON.stringify({
-                                            accounts
-                                        })
-                                }
-                            );
-
-
-                        const auditResult =
-                            await res.json();
-
-
-                        document
-                            .getElementById(
-                                "loadingIndicator"
-                            )
-                            .classList
-                            .add("hidden");
-
-
-                        document
-                            .getElementById(
-                                "btnRunAudit"
-                            )
-                            .disabled = false;
-
-
-                        if (res.ok) {
-
-                            globalAuditResult =
-                                auditResult;
-
-                            renderResults(
-                                auditResult
-                            );
-
-                        } else {
-
-                            alert(
-                                "Denetim hatası: " +
-                                (
-                                    auditResult.detail ||
-                                    "İşlem başarısız"
-                                )
-                            );
-
-                        }
-
-
-                    } catch (err) {
-
-                        document
-                            .getElementById(
-                                "loadingIndicator"
-                            )
-                            .classList
-                            .add("hidden");
-
-
-                        document
-                            .getElementById(
-                                "btnRunAudit"
-                            )
-                            .disabled = false;
-
-
-                        alert(
-                            "İşlem hatası: " +
-                            err.message
-                        );
-
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            document.getElementById("loadingIndicator").classList.remove("hidden");
+            document.getElementById("resultsSection").classList.add("hidden");
+            document.getElementById("btnRunAudit").disabled = true;
+
+            reader.onload = async function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+                    let accounts = [];
+
+                    for (let i = 0; i < rows.length; i++) {
+                        let r = rows[i];
+                        if (!r || r.length < 3) continue;
+
+                        let codeStr = String(r[0] || "").trim();
+                        if (!codeStr || isNaN(parseInt(codeStr.charAt(0)))) continue;
+
+                        accounts.push({
+                            code: codeStr,
+                            name: String(r[1] || "").trim(),
+                            debit: r[2] != null ? r[2] : 0,
+                            credit: r[3] != null ? r[3] : 0,
+                            debitBal: r[4] != null ? r[4] : 0,
+                            creditBal: r[5] != null ? r[5] : 0
+                        });
                     }
 
-                };
-
-
-            reader.readAsArrayBuffer(
-                file
-            );
-
-        }
-
-
-        function renderResults(result) {
-
-            document
-                .getElementById(
-                    "resultsSection"
-                )
-                .classList
-                .remove("hidden");
-
-
-            const rawAiSummary =
-                result.ai_executive_summary ||
-                "Yapay zeka özeti bulunamadı.";
-
-
-            if (
-                typeof marked !== 'undefined'
-            ) {
-
-                document
-                    .getElementById(
-                        "aiSummaryText"
-                    )
-                    .innerHTML =
-                    marked.parse(
-                        rawAiSummary
-                    );
-
-            } else {
-
-                document
-                    .getElementById(
-                        "aiSummaryText"
-                    )
-                    .innerText =
-                    rawAiSummary;
-
-            }
-
-
-            const summaryBox =
-                document.getElementById(
-                    "summaryBox"
-                );
-
-
-            summaryBox.innerHTML = `
-
-                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-
-                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                        Mizan Durumu
-                    </p>
-
-                    <h3 class="text-xl font-bold mt-1 ${
-                        result.is_balanced
-                            ? 'text-emerald-600'
-                            : 'text-rose-600'
-                    }">
-
-                        ${
-                            result.is_balanced
-                                ? 'Dengede (Eşit)'
-                                : 'Dengesiz (Riskli)'
-                        }
-
-                    </h3>
-
-                </div>
-
-
-                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-
-                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                        Toplam Borç
-                    </p>
-
-                    <h3 class="text-xl font-bold mt-1 text-slate-800">
-
-                        ${
-                            Number(
-                                result.total_debit || 0
-                            ).toLocaleString(
-                                'tr-TR',
-                                {
-                                    minimumFractionDigits: 2
-                                }
-                            )
-                        }
-
-                        TL
-
-                    </h3>
-
-                </div>
-
-
-                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-
-                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                        Toplam Alacak
-                    </p>
-
-                    <h3 class="text-xl font-bold mt-1 text-slate-800">
-
-                        ${
-                            Number(
-                                result.total_credit || 0
-                            ).toLocaleString(
-                                'tr-TR',
-                                {
-                                    minimumFractionDigits: 2
-                                }
-                            )
-                        }
-
-                        TL
-
-                    </h3>
-
-                </div>
-
-
-                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-
-                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                        Tespit Edilen Risk
-                    </p>
-
-                    <h3 class="text-xl font-bold mt-1 text-indigo-600">
-
-                        ${
-                            result.findings_count || 0
-                        }
-
-                        Adet
-
-                    </h3>
-
-                </div>
-
-            `;
-
-
-            const tbody =
-                document.getElementById(
-                    "findingsTableBody"
-                );
-
-
-            tbody.innerHTML = "";
-
-
-            const findings =
-                result.findings || [];
-
-
-            if (
-                findings.length === 0
-            ) {
-
-                tbody.innerHTML = `
-                    <tr>
-                        <td
-                            colspan="5"
-                            class="p-6 text-center text-slate-500 font-medium"
-                        >
-                            Mizanda herhangi bir riskli bulguya rastlanmadı. Tebrikler! 🎉
-                        </td>
-                    </tr>
-                `;
-
-                return;
-
-            }
-
-
-            findings.forEach(
-                f => {
-
-                    let badgeColor =
-                        "bg-amber-50 text-amber-700 border-amber-200";
-
-
-                    if (
-                        f.level === "KRİTİK"
-                    ) {
-
-                        badgeColor =
-                            "bg-rose-50 text-rose-700 border-rose-200";
-
+                    if (accounts.length === 0) {
+                        alert("Mizan dosyasında geçerli hesap satırları bulunamadı. Lütfen ilk sütunda hesap kodu olan standart bir mizan yükleyin.");
+                        document.getElementById("loadingIndicator").classList.add("hidden");
+                        document.getElementById("btnRunAudit").disabled = false;
+                        return;
                     }
 
-
-                    let journalHtml = "";
-
-
-                    if (
-                        f.journal_suggestion &&
-                        f.journal_suggestion.lines &&
-                        f.journal_suggestion.lines.length > 0
-                    ) {
-
-                        let linesHtml =
-                            f.journal_suggestion.lines
-                                .map(
-                                    l => `
-
-                                    <div class="flex justify-between text-xs py-1 border-b border-indigo-100 last:border-0 font-mono">
-
-                                        <span class="font-semibold text-slate-700">
-                                            ${l.account}
-                                        </span>
-
-                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
-                                            l.type === 'BORÇ'
-                                                ? 'bg-blue-100 text-blue-700'
-                                                : 'bg-emerald-100 text-emerald-700'
-                                        }">
-
-                                            ${l.type}
-
-                                        </span>
-
-                                        <span class="font-bold text-slate-800">
-
-                                            ${
-                                                Number(
-                                                    l.amount || 0
-                                                ).toLocaleString(
-                                                    'tr-TR',
-                                                    {
-                                                        minimumFractionDigits: 2
-                                                    }
-                                                )
-                                            }
-
-                                            TL
-
-                                        </span>
-
-                                    </div>
-
-                                `
-                                )
-                                .join("");
-
-
-                        journalHtml = `
-
-                            <div class="mt-3 p-3 bg-indigo-50/70 border border-indigo-100 rounded-xl">
-
-                                <p class="text-xs font-bold text-indigo-900 mb-1 flex items-center">
-
-                                    <i class="fa-solid fa-file-invoice text-indigo-600 mr-1.5"></i>
-
-                                    Önerilen Düzeltme Yevmiye Fişi:
-
-                                </p>
-
-                                <p class="text-[11px] text-slate-600 mb-2">
-
-                                    ${f.journal_suggestion.description}
-
-                                </p>
-
-                                <div class="bg-white p-2.5 rounded-lg border border-indigo-100 space-y-1">
-
-                                    ${linesHtml}
-
-                                </div>
-
-                            </div>
-
-                        `;
-
+                    // Temiz Başlıklar (Boş Token Korumalı)
+                    const headers = { "Content-Type": "application/json" };
+                    if (authToken && authToken.trim().length > 10) {
+                        headers["Authorization"] = `Bearer ${authToken}`;
                     }
 
+                    const res = await fetch(`${API_URL}/audit/run`, {
+                        method: "POST",
+                        headers: headers,
+                        body: JSON.stringify({ accounts })
+                    });
 
-                    tbody.innerHTML += `
+                    const auditResult = await res.json();
+                    document.getElementById("loadingIndicator").classList.add("hidden");
+                    document.getElementById("btnRunAudit").disabled = false;
 
-                        <tr class="hover:bg-slate-50 transition border-b border-slate-100 align-top">
+                    if (res.ok) {
+                        globalAuditResult = auditResult;
+                        renderResults(auditResult);
+                    } else {
+                        alert("Denetim Hatası: " + (auditResult.detail || "Sunucu mizanı işleyemedi."));
+                    }
 
-                            <td class="p-4 font-mono font-semibold text-slate-800">
-                                ${f.code}
-                            </td>
-
-                            <td class="p-4 text-slate-800">
-
-                                <div class="font-bold text-slate-900">
-                                    ${f.name}
-                                </div>
-
-                                <div class="text-slate-600 text-xs mt-0.5">
-                                    ${f.title}
-                                </div>
-
-                                ${journalHtml}
-
-                            </td>
-
-                            <td class="p-4">
-
-                                <span class="px-2.5 py-1 rounded-md text-xs font-bold border ${badgeColor}">
-                                    ${f.level}
-                                </span>
-
-                            </td>
-
-                            <td class="p-4 text-slate-600 font-medium text-xs">
-
-                                ${f.category}
-
-                                <span class="text-indigo-600 block">
-                                    (${f.law})
-                                </span>
-
-                            </td>
-
-                            <td class="p-4 text-right font-bold text-slate-800">
-
-                                ${
-                                    Number(
-                                        f.amount || 0
-                                    ).toLocaleString(
-                                        'tr-TR',
-                                        {
-                                            minimumFractionDigits: 2
-                                        }
-                                    )
-                                }
-
-                                TL
-
-                            </td>
-
-                        </tr>
-
-                    `;
-
+                } catch (err) {
+                    document.getElementById("loadingIndicator").classList.add("hidden");
+                    document.getElementById("btnRunAudit").disabled = false;
+                    alert("İşlem Hatası: " + err.message + "\n(Render sunucusu uyanıyor olabilir, lütfen 20 saniye sonra tekrar deneyin)");
                 }
-            );
-
-        }
-
-
-        // PDF İndirme Fonksiyonu
-        function exportToPDF() {
-
-            if (!globalAuditResult) {
-
-                alert(
-                    "Önce bir mizan analizi yapmalısınız!"
-                );
-
-                return;
-
-            }
-
-
-            const element =
-                document.getElementById(
-                    "printableReportArea"
-                );
-
-
-            const opt = {
-
-                margin: [
-                    10,
-                    10,
-                    10,
-                    10
-                ],
-
-                filename:
-                    'AuditSMMM_Mizan_Denetim_Raporu.pdf',
-
-                image: {
-                    type: 'jpeg',
-                    quality: 0.98
-                },
-
-                html2canvas: {
-                    scale: 2,
-                    useCORS: true
-                },
-
-                jsPDF: {
-                    unit: 'mm',
-                    format: 'a4',
-                    orientation: 'portrait'
-                }
-
             };
 
-
-            html2pdf()
-                .set(opt)
-                .from(element)
-                .save();
-
+            reader.readAsArrayBuffer(file);
         }
 
+        function renderResults(result) {
+            document.getElementById("resultsSection").classList.remove("hidden");
 
-        // Excel İndirme Fonksiyonu
-        function exportToExcel() {
-
-            if (
-                !globalAuditResult ||
-                !globalAuditResult.findings
-            ) {
-
-                alert(
-                    "İndirilecek analiz raporu bulunamadı!"
-                );
-
-                return;
-
+            const rawAiSummary = result.ai_executive_summary || "Yapay zeka özeti bulunamadı.";
+            if (typeof marked !== 'undefined') {
+                document.getElementById("aiSummaryText").innerHTML = marked.parse(rawAiSummary);
+            } else {
+                document.getElementById("aiSummaryText").innerText = rawAiSummary;
             }
 
+            const summaryBox = document.getElementById("summaryBox");
+            summaryBox.innerHTML = `
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Mizan Durumu</p>
+                    <h3 class="text-xl font-bold mt-1 ${result.is_balanced ? 'text-emerald-600' : 'text-rose-600'}">
+                        ${result.is_balanced ? 'Dengede (Eşit)' : 'Dengesiz (Riskli)'}
+                    </h3>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Toplam Borç</p>
+                    <h3 class="text-xl font-bold mt-1 text-slate-800">
+                        ${Number(result.total_debit || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL
+                    </h3>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Toplam Alacak</p>
+                    <h3 class="text-xl font-bold mt-1 text-slate-800">
+                        ${Number(result.total_credit || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL
+                    </h3>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tespit Edilen Risk</p>
+                    <h3 class="text-xl font-bold mt-1 text-indigo-600">${result.findings_count || 0} Adet</h3>
+                </div>
+            `;
 
-            let exportData =
-                globalAuditResult.findings.map(
-                    f => ({
+            const tbody = document.getElementById("findingsTableBody");
+            tbody.innerHTML = "";
 
-                        "Hesap Kodu":
-                            f.code,
+            const findings = result.findings || [];
+            if (findings.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-500 font-medium">Mizanda herhangi bir riskli bulguya rastlanmadı. Tebrikler! 🎉</td></tr>`;
+                return;
+            }
 
-                        "Hesap Adı":
-                            f.name,
+            findings.forEach(f => {
+                let badgeColor = f.level === "KRİTİK" ? "bg-rose-50 text-rose-700 border-rose-200" : "bg-amber-50 text-amber-700 border-amber-200";
 
-                        "Risk Seviyesi":
-                            f.level,
+                let journalHtml = "";
+                if (f.journal_suggestion && f.journal_suggestion.lines && f.journal_suggestion.lines.length > 0) {
+                    let linesHtml = f.journal_suggestion.lines.map(l => `
+                        <div class="flex justify-between text-xs py-1 border-b border-indigo-100 last:border-0 font-mono">
+                            <span class="font-semibold text-slate-700">${l.account}</span>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${l.type === 'BORÇ' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'}">${l.type}</span>
+                            <span class="font-bold text-slate-800">${Number(l.amount || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL</span>
+                        </div>
+                    `).join("");
 
-                        "Kategori":
-                            f.category,
+                    journalHtml = `
+                        <div class="mt-3 p-3 bg-indigo-50/70 border border-indigo-100 rounded-xl">
+                            <p class="text-xs font-bold text-indigo-900 mb-1 flex items-center">
+                                <i class="fa-solid fa-file-invoice text-indigo-600 mr-1.5"></i> Önerilen Düzeltme Yevmiye Fişi:
+                            </p>
+                            <p class="text-[11px] text-slate-600 mb-2">${f.journal_suggestion.description}</p>
+                            <div class="bg-white p-2.5 rounded-lg border border-indigo-100 space-y-1">${linesHtml}</div>
+                        </div>
+                    `;
+                }
 
-                        "Açıklama":
-                            f.title,
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition border-b border-slate-100 align-top">
+                        <td class="p-4 font-mono font-semibold text-slate-800">${f.code}</td>
+                        <td class="p-4 text-slate-800">
+                            <div class="font-bold text-slate-900">${f.name}</div>
+                            <div class="text-slate-600 text-xs mt-0.5">${f.title}</div>
+                            ${journalHtml}
+                        </td>
+                        <td class="p-4"><span class="px-2.5 py-1 rounded-md text-xs font-bold border ${badgeColor}">${f.level}</span></td>
+                        <td class="p-4 text-slate-600 font-medium text-xs">${f.category} <span class="text-indigo-600 block">(${f.law})</span></td>
+                        <td class="p-4 text-right font-bold text-slate-800">${Number(f.amount || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL</td>
+                    </tr>
+                `;
+            });
 
-                        "Yasal Dayanak":
-                            f.law,
-
-                        "Tutar (TL)":
-                            f.amount
-
-                    })
-                );
-
-
-            const worksheet =
-                XLSX.utils.json_to_sheet(
-                    exportData
-                );
-
-
-            const workbook =
-                XLSX.utils.book_new();
-
-
-            XLSX.utils.book_append_sheet(
-                workbook,
-                worksheet,
-                "Denetim_Ve_Yevmiye_Raporu"
-            );
-
-
-            XLSX.writeFile(
-                workbook,
-                "SMMM_Denetim_Ve_Yevmiye_Raporu.xlsx"
-            );
-
+            document.getElementById("resultsSection").scrollIntoView({ behavior: 'smooth' });
         }
 
+        // V10 RAG MEVZUATA SOR FONKSİYONU
+        async function askRagFromWebsite() {
+            const questionInput = document.getElementById("ragQuestion");
+            const question = questionInput.value.trim();
 
-        function switchTab(tabId) {
+            if (!question) {
+                alert("Lütfen mevzuatla ilgili bir soru yazın.");
+                questionInput.focus();
+                return;
+            }
 
-            document
-                .querySelectorAll(
-                    'nav a'
-                )
-                .forEach(
-                    el =>
-                        el.className =
-                            "flex items-center px-4 py-3 rounded-xl hover:bg-slate-800 hover:text-white transition"
-                );
+            const btn = document.getElementById("btnAskRag");
+            const loading = document.getElementById("ragLoading");
+            const resultBox = document.getElementById("ragResult");
+            const answerBox = document.getElementById("ragAnswer");
+            const sourcesList = document.getElementById("ragSourcesList");
 
+            btn.disabled = true;
+            loading.classList.remove("hidden");
+            resultBox.classList.add("hidden");
+            answerBox.innerHTML = "";
+            sourcesList.innerHTML = "";
 
-            document
-                .getElementById(
-                    `nav-${tabId}`
-                )
-                .className =
-                    "flex items-center px-4 py-3 rounded-xl bg-indigo-600 text-white font-medium transition shadow-lg shadow-indigo-600/20";
+            try {
+                const headers = { "Content-Type": "application/json" };
+                if (authToken && authToken.trim().length > 10) {
+                    headers["Authorization"] = `Bearer ${authToken}`;
+                }
 
+                const res = await fetch(`${API_URL}/rag/ask`, {
+                    method: "POST",
+                    headers: headers,
+                    body: JSON.stringify({ question: question })
+                });
+
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || "Cevap alınamadı.");
+
+                const answer = data.answer || "Cevap oluşturulamadı.";
+                if (typeof marked !== "undefined") {
+                    answerBox.innerHTML = marked.parse(answer);
+                } else {
+                    answerBox.innerText = answer;
+                }
+
+                const sources = data.sources || data.documents || [];
+                if (sources.length === 0) {
+                    sourcesList.innerHTML = `<div class="text-xs text-slate-500">Mevzuat eşleşmesi genel kanun maddeleri üzerinden değerlendirildi.</div>`;
+                } else {
+                    sources.forEach((doc, index) => {
+                        const law = doc.law || doc.kanun || doc.kanun_kodu || "Mevzuat";
+                        const article = doc.article || doc.madde || doc.madde_no || "";
+                        const title = doc.title || doc.baslik || "";
+
+                        sourcesList.innerHTML += `
+                            <div class="bg-white border border-slate-200 rounded-xl p-3 flex items-start">
+                                <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center mr-3 flex-shrink-0">
+                                    ${index + 1}
+                                </span>
+                                <div>
+                                    <p class="text-sm font-bold text-slate-800">${law} ${article ? ' - Madde ' + article : ''}</p>
+                                    <p class="text-xs text-slate-500 mt-0.5">${title}</p>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+
+                resultBox.classList.remove("hidden");
+                resultBox.scrollIntoView({ behavior: "smooth", block: "start" });
+            } catch (err) {
+                alert("Mevzuat sorgusu hatası: " + err.message);
+            } finally {
+                loading.classList.add("hidden");
+                btn.disabled = false;
+            }
         }
 
+        function exportToPDF() {
+            if (!globalAuditResult) {
+                alert("Önce bir mizan analizi yapmalısınız!");
+                return;
+            }
+            const element = document.getElementById("printableReportArea");
+            html2pdf().set({
+                margin: [10, 10, 10, 10],
+                filename: 'AuditSMMM_Mizan_Denetim_Raporu.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            }).from(element).save();
+        }
+
+        function exportToExcel() {
+            if (!globalAuditResult || !globalAuditResult.findings) {
+                alert("İndirilecek analiz raporu bulunamadı!");
+                return;
+            }
+            let exportData = globalAuditResult.findings.map(f => ({
+                "Hesap Kodu": f.code,
+                "Hesap Adı": f.name,
+                "Risk Seviyesi": f.level,
+                "Kategori": f.category,
+                "Açıklama": f.title,
+                "Yasal Dayanak": f.law,
+                "Tutar (TL)": f.amount
+            }));
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Denetim_Raporu");
+            XLSX.writeFile(wb, "SMMM_Denetim_Raporu.xlsx");
+        }
     </script>
-
 </body>
 </html>
